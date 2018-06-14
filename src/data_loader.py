@@ -24,7 +24,7 @@ def loadBinaryData(path):
         return None
 
 def loadImages(directory, names):
-    images = editc()
+    images = edict()
     for name in names:
         path = os.path.join(directory, name)
         try:
@@ -38,7 +38,7 @@ def loadImages(directory, names):
 
 class BatchLoader:
 
-    def __init__(self, batch_size=10, capacity=None, sources):
+    def __init__(self, sources, batch_size=10, capacity=None):
         self.batch_size = batch_size
         self.capacity = capacity
         
@@ -50,11 +50,13 @@ class BatchLoader:
             # load data from source
             annos = loadBinaryData("datasets/annos_10.pkl")
             imgs = loadImages("datasets/VOC2010/JPEGImages/", annos.keys())
+            print (annos)
             self.data.annos.update(annos)
             self.data.imgs.update(imgs)
         
     def __bool__(self):
-        return self.data.imgs
+        print (self.data.annos)
+        return bool(self.data.annos)
 
     def next(self, amount=None):
-        
+        return self.data
