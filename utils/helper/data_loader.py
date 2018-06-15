@@ -3,10 +3,12 @@ Data loader:
 
 Manage the batch loading of data concerning different purposes and datasets
 
+Batch structure:
+-TODO:
+
 '''
 
 from easydict import EasyDict as edict
-
 import os, sys
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
@@ -17,8 +19,15 @@ from src.config import PATH
 from utils.helper.file_manager import *
 from utils.helper.anno_parser import parsePASCALPartAnno
 
+
+# global constants for specify the dataset sources
 PASCAL = "PASCAL"
 SOURCE = [PASCAL]
+
+'''
+dataset-specific loading functions
+
+'''
 
 def loadPASCALDataList():
     directory = PATH.DATA.PASCAL.ANNOS
@@ -36,7 +45,13 @@ def fetchDataFromPASCAL(identifier):
     annos, labels = parsePASCALPartAnno(anno_dir, identifier+anno_postfix)
 
     return img, annos, labels
-    
+
+
+'''
+Load data as batches
+
+'''
+
 class BatchLoader(object):
 
     def __init__(self, sources=[PASCAL], batch_size=10, amount=None):
@@ -49,7 +64,8 @@ class BatchLoader(object):
             elif source == PASCAL:
                 self.data += loadPASCALDataList()
 
-            if amount != None and len(self.data)>amount:
+            if amount is not None and len(self.data)>amount:
+                # discard remaining datasets, since the specified amount is reached
                 self.data = self.data[:amount]
                 break
 
@@ -63,6 +79,8 @@ class BatchLoader(object):
         return len(self.data)
     
     def nextBatch(self, amount=None):
+        # adjust the amount of next batch based on the specified amount
+        # and the actual remaining number of data
         num = self.batch_size if amount is None else amount
         num = num if self.size > num else self.size
 

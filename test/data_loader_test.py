@@ -34,16 +34,13 @@ class TestDataLoader(unittest.TestCase):
 
         self.assertTrue(len(batch.ids) == len(batch.imgs))
         self.assertTrue(len(batch.annos) == 10)
+        self.assertTrue(bl.size == 10103-10)
 
 
 class TestFileManager(unittest.TestCase):
 
-    def test_load_binary(self):
-        data = loadBinaryData(os.path.join(par_path, "datasets/annos_10.pkl"))
-        self.assertTrue(data)
-
     def test_load_image(self):
-        path = os.path.join(par_path, "datasets/VOC2010/JPEGImages")
+        path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, "2008_004198.jpg")
         self.assertTrue(image)
         

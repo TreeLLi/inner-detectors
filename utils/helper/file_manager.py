@@ -27,12 +27,3 @@ def loadImage(directory, file_name):
         print ("Error: failed to load image {}".format(file_name))
         return None
 
-def loadBinaryData(path):
-    try:
-        with open(path, 'rb') as data_file:
-            data = pickle.load(data_file)
-            return data
-    except:
-        print ("Error: failed to load data {}".format(path))
-        return None
-
