@@ -1,8 +1,9 @@
 # datasets
 broden1_227
+pascal_part
 
 # models
-
+pre-models/*.ckpt
 
 # python cache
 __pycache__
