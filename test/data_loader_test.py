@@ -6,7 +6,7 @@ sys.path.append(par_path)
 
 from src.config import PATH
 from utils.helper.anno_parser import parsePASCALPartAnno
-from utils.helper.file_manager import loadBinaryData, loadImage
+from utils.helper.file_manager import loadImage
 from utils.helper.data_loader import *
 
 class TestDataLoader(unittest.TestCase):
@@ -36,7 +36,15 @@ class TestDataLoader(unittest.TestCase):
         self.assertTrue(len(batch.annos) == 10)
         self.assertTrue(bl.size == 10103-10)
 
+    def test_preprocess(self):
+        path = PATH.DATA.PASCAL.IMGS
+        image = loadImage(path, "2008_004198.jpg")
+        processed = preprocessImage(image)
 
+        print (processed.shape)
+        self.assertTrue(processed.shape == (224, 224, 3))
+
+        
 class TestFileManager(unittest.TestCase):
 
     def test_load_image(self):
@@ -59,5 +67,7 @@ class TestAnnoParser(unittest.TestCase):
         self.assertTrue(annos[2].partof == annos[0].name)
 
         self.assertTrue(labels[0] == 15)
+
+
 if __name__ == "__main__":
     unittest.main()
