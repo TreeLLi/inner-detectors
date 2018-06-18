@@ -45,3 +45,12 @@ PATH.DATA.PASCAL = edict({
     "IMGS" : os.path.join(_pascal_path, "raw_images"),
     "ANNOS" : os.path.join(_pascal_path, "part_annos")
 })
+
+
+# model path
+_model_path = os.path.join(_root_path, "pre-models")
+_vgg16_path = os.path.join(_model_path, "vgg16.npy")
+
+PATH.MODEL = edict()
+PATH.MODEL.ROOT = _model_path
+PATH.MODEL.VGG16 = _vgg16_path
