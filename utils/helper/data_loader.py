@@ -10,6 +10,7 @@ Batch structure:
 
 from easydict import EasyDict as edict
 import os, sys
+import numpy as np
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
@@ -25,7 +26,7 @@ PASCAL = "PASCAL"
 SOURCE = [PASCAL]
 
 '''
-dataset-specific loading functions
+Dataset-specific loading functions
 
 '''
 
@@ -48,14 +49,40 @@ def fetchDataFromPASCAL(identifier):
 
 
 '''
+Data pre-processing
+
+resize, crop and normalise images but not excluding means of datasets
+
+'''
+
+def preprocessImage(img, target=None):
+    # normalise
+    img = img / 255.0
+    assert (img>=0).all() and (img<=1.0).all()
+
+    print ("original:{}".format(img.shape))
+    
+    if target is None or target.lower() in ["vgg16"]:
+        # pre-process images based on the requirements of VGG16
+        short_edge = min(img.shape[:2])
+        print ("short:{}".format(short_edge))
+        crop_y = int((img.shape[0] - short_edge) / 2)
+        crop_x = int((img.shape[1] - short_edge) / 2)
+        crop_img = img[crop_y:crop_y+short_edge, crop_x:crop_x+short_edge]
+
+        return np.resize(crop_img, (224, 224,3))
+    
+
+'''
 Load data as batches
 
 '''
 
 class BatchLoader(object):
 
-    def __init__(self, sources=[PASCAL], batch_size=10, amount=None):
+    def __init__(self, sources=[PASCAL], target=None, batch_size=10, amount=None):
         self.batch_size = batch_size
+        self.target = target
         
         self.data = []
         for source in sources:
@@ -102,9 +129,13 @@ class BatchLoader(object):
                 img, annos, labels = fetchDataFromPASCAL(s_id)
             # add operations for other sources
 
+            img = preprocessImage(img, self.target)
+            
             batch.ids.append(s_id)
             batch.imgs.append(img)
             batch.annos.append(annos)
             batch.labels.append(labels)
-            
+
+        batch.imgs = np.asarray(batch.imgs)
+        batch.annos = np.asarray(batch.annos)
         return batch
