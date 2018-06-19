@@ -14,7 +14,8 @@ import numpy as np
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
-sys.path.append(root_path)
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
 
 from src.config import PATH
 from utils.helper.file_manager import *
@@ -99,7 +100,7 @@ class BatchLoader(object):
         self.amount = amount if amount is not None else len(self.data)
         
     def __bool__(self):
-        return len(self.data) != 0
+        return self.size != 0
 
     @property
     def size(self):
