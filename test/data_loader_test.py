@@ -6,7 +6,7 @@ sys.path.append(par_path)
 
 from src.config import PATH
 from utils.helper.anno_parser import parsePASCALPartAnno
-from utils.helper.file_manager import loadImage
+from utils.helper.file_manager import loadImage, loadListFromText
 from utils.helper.data_loader import *
 
 class TestDataLoader(unittest.TestCase):
@@ -51,6 +51,12 @@ class TestFileManager(unittest.TestCase):
         path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, "2008_004198.jpg")
         self.assertTrue(image)
+        
+    def test_load_list(self):
+        path = os.path.join(PATH.ROOT, "src/layers_vgg16.txt")
+        layers = loadListFromText(path)
+        self.assertTrue(len(layers) == 21)
+        self.assertTrue(layers[0] == "conv1_1")
         
         
 class TestAnnoParser(unittest.TestCase):

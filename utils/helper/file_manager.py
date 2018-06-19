@@ -27,3 +27,11 @@ def loadImage(directory, file_name):
         print ("Error: failed to load image {}".format(file_name))
         return None
 
+def loadListFromText(file_path):
+    try:
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            return [line.rstrip('\n') for line in lines]
+    except:
+        print ("Error: failed to load text file {}".format(file_path))
+        return None
