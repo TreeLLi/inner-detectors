@@ -16,6 +16,18 @@ Config for program parameters
 
 CONFIG = edict()
 
+# models
+CONFIG.MODEL = edict()
+
+CONFIG.MODEL.RANGE = ["vgg16"]
+
+
+# dissection
+CONFIG.DIS = edict()
+
+CONFIG.DIS.MODEL = "vgg16" # the model to be dissected
+CONFIG.DIS.REFLECT = "linear" # "linear" or "deconvnet"
+
 
 
 '''
@@ -23,7 +35,9 @@ Config for program paths
 
 '''
 
+
 PATH = edict()
+
 
 _curr_path = os.path.dirname(os.path.abspath(__file__))
 _root_path = os.path.join(_curr_path, "..")
@@ -53,4 +67,8 @@ _vgg16_path = os.path.join(_model_path, "vgg16.npy")
 
 PATH.MODEL = edict()
 PATH.MODEL.ROOT = _model_path
-PATH.MODEL.VGG16 = _vgg16_path
+
+# VGG16
+PATH.MODEL.VGG16 = editc()
+PATH.MODEL.VGG16.PARAM = _vgg16_path
+PATH.MODEL.VGG16.LAYERS = os.path.join(_root_path, "src/layers_vgg16.txt")
