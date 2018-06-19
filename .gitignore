@@ -4,6 +4,7 @@ pascal_part
 
 # models
 pre-models/*.ckpt
+pre-models/*.npy
 
 # python cache
 __pycache__
