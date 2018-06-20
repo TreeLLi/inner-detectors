@@ -20,5 +20,6 @@ def iou(mask1, mask2, binary=True):
 
 def binary(mask):
     mask[mask>0] = 1
+    mask[mask<0] = 0
     
     return mask
