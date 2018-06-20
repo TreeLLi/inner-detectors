@@ -8,3 +8,6 @@ pre-models/*.npy
 
 # python cache
 __pycache__
+
+# source backup
+*.back
