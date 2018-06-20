@@ -7,7 +7,7 @@ Currently, without checking correctness, i.e. if the accuray is as research
 
 '''
 
-import os, sys
+import unittest, os, sys
 import numpy as np
 import tensorflow as tf
 
@@ -64,7 +64,7 @@ class TestModelAgent(TestBase):
         # TODO - verify activation maps
         self.assertEqual(len(activ_maps), 1472)
         self.assertEqual(activ_maps.pool1_1.shape, (1, 112, 112))
-        self.assertEqual(activ_maps.pool2_1.shape, (2, 56, 56))
+        self.assertEqual(activ_maps.pool2_1.shape, (1, 56, 56))
         
 if __name__ == "__main__":
     unittest.main()
