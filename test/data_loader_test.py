@@ -1,15 +1,16 @@
-import unittest, os, sys
+import os, sys
 
-abs_path = os.path.dirname(os.path.abspath(__file__))
-par_path = os.path.join(abs_path, "..")
-sys.path.append(par_path)
+curr_path = os.path.dirname(os.path.abspath(__file__))
+root_path = os.path.join(curr_path, "..")
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
 
 from src.config import PATH
 from utils.helper.anno_parser import parsePASCALPartAnno
 from utils.helper.file_manager import loadImage, loadListFromText
 from utils.helper.data_loader import *
 
-class TestDataLoader(unittest.TestCase):
+class TestDataLoader(TestBase):
 
     def test_init(self):
         bl = BatchLoader()
@@ -45,7 +46,7 @@ class TestDataLoader(unittest.TestCase):
         self.assertTrue(processed.shape == (224, 224, 3))
 
         
-class TestFileManager(unittest.TestCase):
+class TestFileManager(TestBase):
 
     def test_load_image(self):
         path = PATH.DATA.PASCAL.IMGS
@@ -59,7 +60,7 @@ class TestFileManager(unittest.TestCase):
         self.assertTrue(layers[0] == "conv1_1")
         
         
-class TestAnnoParser(unittest.TestCase):
+class TestAnnoParser(TestBase):
 
     def test_parse_pascal_anno(self):
         directory = PATH.DATA.PASCAL.ANNOS
