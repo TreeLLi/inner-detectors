@@ -16,8 +16,8 @@ if root_path not in sys.path:
 
 from utils.helper.data_loader import BatchLoader
 from utils.model.model_agent import ModelAgent
-from config import CONFIG
-
+from src.config import CONFIG
+from utils.dissection.iou import iou
 
 '''
 Main program
@@ -79,8 +79,48 @@ def matchActivAnnos(activ, annos):
         category = anno.category
         mask = anno.mask
 
-        matches.concept = edict()
-        matches.concept.category = category
-        matches.concept.iou = iou(activ, mask)
-        
+        if concept not in matches:
+            matches[concept] = edict()
+            matches[concept].category = category
+            matches[concept].iou = iou(activ, mask)
+            matches[concept].count = 1
+        else:
+            # multiple same concepts exist in the same image
+            iou_1 = matches[concept].iou
+            count_1 = matches[concept].count
+            iou_2 = iou(activ, mask)
+            matches[concept].iou = weightedIoU(iou_1, count_1, iou_2)
+            matches[concept].count += 1
+            
     return matches
+
+
+# calculate count-weighted IoU
+def weightedIoU(iou_1, count_1, iou_2, count_2=1):
+    return (iou_1*count_1 + iou_2*count_2) / (count_1+count_2)
+
+
+# combine two matches results
+def combineMatches(matches, batch_matches):
+    if matches is None or batch_matches is None:
+        return matches if batch_matches is None else batch_matches
+
+    for unit, batch_match in batch_matches.items():
+        if unit not in matches:
+            matches[unit] = edict()
+
+        unit_match = matches[unit]
+        for img_match in batch_match:
+            for concept, cct_match in img_match.items():
+                if concept not in unit_match:
+                    unit_match[concept] = cct_match
+                else:
+                    iou_1 = cct_match.iou
+                    count_1 = cct_match.count
+                    iou_2 = unit_match[concept].iou
+                    count_2 = unit_match[concept].count
+                    unit_match[concept].iou = weightedIoU(iou_1, count_1, iou_2, count_2)
+                    unit_match[concept].count += count_1
+        
+
+    
