@@ -39,6 +39,11 @@ CONFIG.DIS = edict()
 CONFIG.DIS.MODEL = CONFIG.MODEL.VGG16.ID # the model to be dissected
 CONFIG.DIS.REFLECT = "linear" # "linear" or "deconvnet"
 
+CONFIG.DIS.IOU_THRESHOLD = 0.3
+CONFIG.DIS.TOP = 1
+
+CONFIG.DIS.REPORT_TEXT = True
+CONFIG.DIS.REPORT_FIGURE = False
 
 
 '''
@@ -81,6 +86,11 @@ PATH.MODEL.ROOT = _model_path
 PATH.MODEL.VGG16 = edict()
 PATH.MODEL.VGG16.PARAM = _vgg16_path
 PATH.MODEL.VGG16.LAYERS = os.path.join(_root_path, "src/layers_vgg16.txt")
+
+
+# output path
+PATH.OUT = edict()
+PATH.OUT.MATCH = os.path.join(_root_path, "output/")
 
 
 '''

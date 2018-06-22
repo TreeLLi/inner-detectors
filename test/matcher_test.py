@@ -47,8 +47,47 @@ class TestMatcher(TestBase):
 
 
     def test_multiple_matches(self):
-        print ("shit")
+        unit = 'conv5'
+        batch_matches = edict()
+        img_m1 = edict()
+        img_m1.leg = edict({
+            "iou" : 0.5,
+            "count" : 1
+        })
+        img_m1.arm = edict({
+            "iou" : 1,
+            "count" : 2
+        })
+        img_m2 = edict()
+        img_m2.leg = edict({
+            "iou" : 1,
+            "count" : 1
+        })
+        img_m2.head = edict({
+            "iou" : 0,
+            "count" : 2
+        })
+        batch_matches[unit] = [img_m1, img_m2]
 
+        matches = edict()
+        matches.conv5 = edict()
+        matches.conv5.arm = edict({
+            "iou" : 0,
+            "count" : 2
+        })
+
+        # test None input
+        results = combineMatches(None, None)
+        self.assertIsNone(results)
+        
+        combineMatches(matches, batch_matches)
+
+        self.assertEqual(matches.conv5.arm.iou, 0.5)
+        self.assertEqual(matches.conv5.arm.count, 4)
+        self.assertEqual(matches.conv5.leg.iou, 0.75)
+        self.assertEqual(matches.conv5.leg.count, 2)
+        self.assertEqual(matches.conv5.head.iou, 0)
+        self.assertEqual(matches.conv5.head.count, 2)
 
     def test_weighted_iou(self):
         iou_1 = 0
@@ -58,6 +97,6 @@ class TestMatcher(TestBase):
 
         iou = weightedIoU(iou_1, count_1, iou_2, count_2)
         self.assertEqual(iou, 0.5)
-        
+
 if __name__ == "__main__":
     unittest.main()

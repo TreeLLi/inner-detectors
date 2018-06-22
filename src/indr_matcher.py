@@ -45,16 +45,15 @@ if __name__ == "__main__":
         annos = batch.annos
 
         batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-        combineMatches(matches, batch_matches)
+        matches = combineMatches(matches, batch_matches)
 
-    saveMatches(matches)
+    reportMatchResults(matches)
 
 
 '''
 Match annotaions and activation maps
 
 '''
-
 
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
@@ -102,9 +101,11 @@ def weightedIoU(iou_1, count_1, iou_2, count_2=1):
 
 # combine two matches results
 def combineMatches(matches, batch_matches):
-    if matches is None or batch_matches is None:
-        return matches if batch_matches is None else batch_matches
-
+    if batch_matches is None:
+        return matches
+    elif matches is None:
+        matches = edict()
+        
     for unit, batch_match in batch_matches.items():
         if unit not in matches:
             matches[unit] = edict()
@@ -112,6 +113,7 @@ def combineMatches(matches, batch_matches):
         unit_match = matches[unit]
         for img_match in batch_match:
             for concept, cct_match in img_match.items():
+                print (cct_match)
                 if concept not in unit_match:
                     unit_match[concept] = cct_match
                 else:
@@ -121,6 +123,59 @@ def combineMatches(matches, batch_matches):
                     count_2 = unit_match[concept].count
                     unit_match[concept].iou = weightedIoU(iou_1, count_1, iou_2, count_2)
                     unit_match[concept].count += count_1
+    return matches
+
+
+'''
+Organise results and report
+
+'''
+
+def reportMatchResults(matches):
+    print ("Report Matches: begin...")
+    iou_thres = CONFIG.DIS.IOU_THRESHOLD
+    top = CONFIG.DIS.TOP
+    retained_matches = filterMatches(matches, top, iou_thres)
+    print ("Report Matches: finish filtering.")
+    
+    if CONFIG.DIS.REPORT_TEXT:
+        reportMatchesInText(retained_matches)
+
+    if CONFIG.DIS.REPORT_FIGURE:
+        reportMatchesInFigure(retained_matches)
         
 
+def filterMatches(matches, top=1, iou_thres=0.3):
+    for unit, unit_matches in matches.items():
+        top_n = [None for x in range(top)]
+
+        for concept, cct_match in unit_matches.items():
+            idx = topIndex(top_n, cct_match.iou)
+            if idx < top:
+                top_n[idx] = (concept, cct_match.iou)
+
+        retained = []
+        for concept, cct_match in top_n:
+            if cct_match.iou >= iou_thres:
+                match = [concept, cct_match.iou, cct_match.count]
+                retained.append(match)
+        matches[unit] = retained
+
+        
+def reportMatchesInText(matches):
+    model = CONFIG.DIS.MODEL
+    out_path = PATH.OUT.MATCH
+    file_path = "{}{}_matches.txt".format(out_path, model)
     
+    with open(file_path, 'w') as f:
+        for unit, unit_matches in matches.items():
+            unit_line = "{}:\n".format(unit)
+            f.write(unit_line)
+            
+            for match in unit_matches:
+                match_line = "{:10} IoU: {:.2f} Count: {:3}".format(match[0], match[1], match[2])
+                f.write(match_line)
+
+
+def reportMatchesInFigure(matches):
+    print ("placeholder")
