@@ -98,5 +98,74 @@ class TestMatcher(TestBase):
         iou = weightedIoU(iou_1, count_1, iou_2, count_2)
         self.assertEqual(iou, 0.5)
 
+    def test_top_index(self):
+        top_n = [('1', 0.3), ('2', 0.2), ('3', 0.1)]
+        iou = 0.15
+        index = topIndex(top_n, iou)
+        self.assertEqual(index, 2)
+        self.assertEqual(len(top_n), 3)
+        
+    def test_matches_filter(self):
+        matches = edict()
+        conv1 = edict()
+        conv1.leg = edict({
+            "iou" : 0.5,
+            "category" : 'part',
+            "count" : 1
+        })
+        conv1.arm = edict({
+            "iou" : 0.2,
+            "count" : 2
+        })
+        conv2 = edict()
+        conv2.head = edict({
+            "iou" : 0.3,
+            "count" : 2
+        })
+        conv2.leg = edict({
+            "iou" : 0,
+            "count" : 5
+        })
+        matches.conv1 = conv1
+        matches.conv2 = conv2
+        
+        filterMatches(matches, top=1, iou_thres=0.3)
+        self.assertEqual(len(matches.conv1), 1)
+        self.assertEqual(matches.conv1[0].name, "leg")
+        self.assertEqual(matches.conv1[0].iou, 0.5)
+        self.assertEqual(matches.conv1[0].count, 1)
+        self.assertEqual(matches.conv1[0].category, "part")
+
+        self.assertEqual(matches.conv2[0].name, 'head')
+        self.assertEqual(matches.conv2[0].iou, 0.3)
+        self.assertEqual(matches.conv2[0].count, 2)
+
+    def test_text_report(self):
+        matches = edict()
+        conv1 = edict()
+        conv1.leg = edict({
+            "iou" : 0.5,
+            "category" : 'part',
+            "count" : 1
+        })
+        conv1.arm = edict({
+            "iou" : 0.2,
+            "count" : 2
+        })
+        conv2 = edict()
+        conv2.head = edict({
+            "iou" : 0.3,
+            "count" : 2
+        })
+        conv2.leg = edict({
+            "iou" : 0,
+            "count" : 5
+        })
+        matches.conv1 = conv1
+        matches.conv2 = conv2
+        
+        filterMatches(matches, top=2, iou_thres=0.0)
+        reportMatchesInText(matches)
+        
 if __name__ == "__main__":
     unittest.main()

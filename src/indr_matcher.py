@@ -16,38 +16,8 @@ if root_path not in sys.path:
 
 from utils.helper.data_loader import BatchLoader
 from utils.model.model_agent import ModelAgent
-from src.config import CONFIG
+from src.config import CONFIG, PATH
 from utils.dissection.iou import iou
-
-'''
-Main program
-
-'''
-
-
-if __name__ == "__main__":
-    bl = BatchLoader()
-    matches = None
-    
-    while bl:
-        batch = bl.nextBatch()
-        images = batch.imgs
-
-        model = ModelAgent()
-        activ_maps = model.getActivMaps(images)
-        
-        if CONFIG.DIS.REFLECT == "linear":
-            from utils.dissection.linear_ref import reflect
-        elif CONFIG.DIS.REFLECT == "deconvnet":
-            from utils.dissection.deconvnet import reflect
-
-        ref_activ_maps = reflect(activ_maps, model=CONFIG.DIS.MODEL)
-        annos = batch.annos
-
-        batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-        matches = combineMatches(matches, batch_matches)
-
-    reportMatchResults(matches)
 
 
 '''
@@ -151,16 +121,25 @@ def filterMatches(matches, top=1, iou_thres=0.3):
 
         for concept, cct_match in unit_matches.items():
             idx = topIndex(top_n, cct_match.iou)
-            if idx < top:
-                top_n[idx] = (concept, cct_match.iou)
+            if idx is not None:
+                top_n.insert(idx, (concept, cct_match.iou))
+                top_n = top_n[:-1]
 
         retained = []
-        for concept, cct_match in top_n:
-            if cct_match.iou >= iou_thres:
-                match = [concept, cct_match.iou, cct_match.count]
-                retained.append(match)
+        for concept, iou in top_n:
+            if iou >= iou_thres:
+                unit_matches[concept].name = concept
+                retained.append(unit_matches[concept])
         matches[unit] = retained
 
+        
+def topIndex(top_n, iou):
+    for idx, cct in enumerate(top_n):
+        if cct is None:
+            return idx
+        elif iou > cct[1]:
+            return idx
+    return None
         
 def reportMatchesInText(matches):
     model = CONFIG.DIS.MODEL
@@ -169,13 +148,45 @@ def reportMatchesInText(matches):
     
     with open(file_path, 'w') as f:
         for unit, unit_matches in matches.items():
-            unit_line = "{}:\n".format(unit)
+            unit_line = "\n{}:\n".format(unit)
             f.write(unit_line)
             
             for match in unit_matches:
-                match_line = "{:10} IoU: {:.2f} Count: {:3}".format(match[0], match[1], match[2])
+                match_line = "{:7} \tIoU: {:.2f} \tCount: {:2}\n".format(match.name, match.iou, match.count)
                 f.write(match_line)
 
 
 def reportMatchesInFigure(matches):
     print ("placeholder")
+
+    
+
+'''
+Main program
+
+'''
+
+
+if __name__ == "__main__":
+    bl = BatchLoader(amount=1)
+    matches = None
+    
+    while bl:
+        batch = bl.nextBatch()
+        images = batch.imgs
+
+        model = ModelAgent()
+        activ_maps = model.getActivMaps(images)
+        
+        if CONFIG.DIS.REFLECT == "linear":
+            from utils.dissection.linear_ref import reflect
+        elif CONFIG.DIS.REFLECT == "deconvnet":
+            from utils.dissection.deconvnet import reflect
+
+        ref_activ_maps = reflect(activ_maps, model=CONFIG.DIS.MODEL)
+        annos = batch.annos
+
+        batch_matches = matchActivsAnnos(ref_activ_maps, annos)
+        matches = combineMatches(matches, batch_matches)
+
+    reportMatchResults(matches)

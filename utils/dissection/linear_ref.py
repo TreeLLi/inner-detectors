@@ -19,8 +19,8 @@ if root_path not in sys.path:
 
 from src.config import *
 
-def reflect(activ_maps, model_agent):
-    if isVGG16(model_agent.model):
+def reflect(activ_maps, model):
+    if isVGG16(model):
         ref = edict()
         for unit, maps in activ_maps.items():
             img_num = maps.shape[0]
