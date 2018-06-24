@@ -39,7 +39,7 @@ CONFIG.DIS = edict()
 CONFIG.DIS.MODEL = CONFIG.MODEL.VGG16.ID # the model to be dissected
 CONFIG.DIS.REFLECT = "linear" # "linear" or "deconvnet"
 
-CONFIG.DIS.IOU_THRESHOLD = 0.3
+CONFIG.DIS.IOU_THRESHOLD = 0.0
 CONFIG.DIS.TOP = 1
 
 CONFIG.DIS.REPORT_TEXT = True

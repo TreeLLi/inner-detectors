@@ -34,9 +34,12 @@ class TestDataLoader(TestBase):
         batch = bl.nextBatch()
         self.assertTrue(batch)
 
-        self.assertTrue(len(batch.ids) == len(batch.imgs))
-        self.assertTrue(len(batch.annos) == 10)
-        self.assertTrue(bl.size == 10103-10)
+        self.assertEqual(len(batch.ids), len(batch.imgs))
+        self.assertEqual(len(batch.annos), 10)
+        self.assertEqual(bl.size, 10103-10)
+
+        self.assertEqual(batch.imgs.shape, (10, 224, 224, 3))
+        self.assertEqual(batch.annos[0][0].mask.shape, (224, 224, 1))
 
     def test_preprocess(self):
         path = PATH.DATA.PASCAL.IMGS

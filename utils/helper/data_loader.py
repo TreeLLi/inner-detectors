@@ -17,7 +17,7 @@ root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import PATH
+from src.config import PATH, isVGG16
 from utils.helper.file_manager import *
 from utils.helper.anno_parser import parsePASCALPartAnno
 
@@ -56,22 +56,38 @@ resize, crop and normalise images but not excluding means of datasets
 
 '''
 
-def preprocessImage(img, target=None):
+def preprocessImage(img, target='vgg16'):
     # normalise
     img = img / 255.0
     assert (img>=0).all() and (img<=1.0).all()
 
     print ("original:{}".format(img.shape))
     
-    if target is None or target.lower() in ["vgg16"]:
+    if isVGG16(target):
         # pre-process images based on the requirements of VGG16
-        short_edge = min(img.shape[:2])
-        print ("short:{}".format(short_edge))
-        crop_y = int((img.shape[0] - short_edge) / 2)
-        crop_x = int((img.shape[1] - short_edge) / 2)
-        crop_img = img[crop_y:crop_y+short_edge, crop_x:crop_x+short_edge]
+        img = resizeImage(img, (224, 224, 3))
 
-        return np.resize(crop_img, (224, 224,3))
+    return img
+
+def preprocessAnnos(annos, target='vgg16'):
+    for anno in annos:
+        mask = anno.mask
+
+        if isVGG16(target):
+            size = (224, 224, 1)
+            mask = resizeImage(mask, size)
+
+        anno.mask = mask
+    return annos
+
+def resizeImage(img, size):
+    # crop based on the center
+    short_edge = min(img.shape[:2])
+    crop_y = int((img.shape[0] - short_edge) / 2)
+    crop_x = int((img.shape[1] - short_edge) / 2)
+    crop_img = img[crop_y:crop_y+short_edge, crop_x:crop_x+short_edge]
+    
+    return np.resize(crop_img, size)
     
 
 '''
@@ -81,7 +97,7 @@ Load data as batches
 
 class BatchLoader(object):
 
-    def __init__(self, sources=[PASCAL], target=None, batch_size=10, amount=None):
+    def __init__(self, sources=[PASCAL], target='vgg16', batch_size=10, amount=None):
         self.batch_size = batch_size
         self.target = target
         
@@ -131,6 +147,7 @@ class BatchLoader(object):
             # add operations for other sources
 
             img = preprocessImage(img, self.target)
+            annos = preprocessAnnos(annos, self.target)
             
             batch.ids.append(s_id)
             batch.imgs.append(img)
@@ -138,5 +155,4 @@ class BatchLoader(object):
             batch.labels.append(labels)
 
         batch.imgs = np.asarray(batch.imgs)
-        batch.annos = np.asarray(batch.annos)
         return batch

@@ -28,10 +28,11 @@ Match annotaions and activation maps
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
 def matchActivsAnnos(activs, annos):
-    matches = edict
+    matches = edict()
     for unit, activs in activs.items():
         unit_matches = []
         for img_idx, activ in enumerate(activs):
+            print ("Matching: {} - image {}".format(unit, img_idx))
             img_annos = annos[img_idx]
             unit_img_matches = matchActivAnnos(activ, img_annos)
             unit_matches.append(unit_img_matches)
@@ -60,7 +61,8 @@ def matchActivAnnos(activ, annos):
             iou_2 = iou(activ, mask)
             matches[concept].iou = weightedIoU(iou_1, count_1, iou_2)
             matches[concept].count += 1
-            
+
+        print ("\tConcept:{:6}\tIoU:{:.2f}\tCount:{:2}".format(concept, matches[concept].iou, matches[concept].count))
     return matches
 
 
@@ -83,7 +85,6 @@ def combineMatches(matches, batch_matches):
         unit_match = matches[unit]
         for img_match in batch_match:
             for concept, cct_match in img_match.items():
-                print (cct_match)
                 if concept not in unit_match:
                     unit_match[concept] = cct_match
                 else:
@@ -115,7 +116,7 @@ def reportMatchResults(matches):
         reportMatchesInFigure(retained_matches)
         
 
-def filterMatches(matches, top=1, iou_thres=0.3):
+def filterMatches(matches, top=3, iou_thres=0.00):
     for unit, unit_matches in matches.items():
         top_n = [None for x in range(top)]
 
@@ -131,7 +132,7 @@ def filterMatches(matches, top=1, iou_thres=0.3):
                 unit_matches[concept].name = concept
                 retained.append(unit_matches[concept])
         matches[unit] = retained
-
+    return matches
         
 def topIndex(top_n, iou):
     for idx, cct in enumerate(top_n):
