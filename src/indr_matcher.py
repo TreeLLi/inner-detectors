@@ -180,7 +180,7 @@ if __name__ == "__main__":
         activ_maps = model.getActivMaps(images)
         
         if CONFIG.DIS.REFLECT == "linear":
-            from utils.dissection.linear_ref import reflect
+            from utils.dissection.interp_ref import reflect
         elif CONFIG.DIS.REFLECT == "deconvnet":
             from utils.dissection.deconvnet import reflect
 

@@ -8,7 +8,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from utils.dissection.iou import iou, binary
-from utils.dissection.linear_ref import *
+from utils.dissection.interp_ref import *
 from utils.helper.data_loader import BatchLoader
 from utils.model.model_agent import ModelAgent
 from test_helper import TestBase
