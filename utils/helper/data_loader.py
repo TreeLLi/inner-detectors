@@ -11,13 +11,14 @@ Batch structure:
 from easydict import EasyDict as edict
 import os, sys
 import numpy as np
+from skimage.transform import resize
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import PATH, isVGG16
+from src.config import PATH, CONFIG, isVGG16
 from utils.helper.file_manager import *
 from utils.helper.anno_parser import parsePASCALPartAnno
 
@@ -65,29 +66,33 @@ def preprocessImage(img, target='vgg16'):
     
     if isVGG16(target):
         # pre-process images based on the requirements of VGG16
-        img = resizeImage(img, (224, 224, 3))
-
+        img = cropImage(img)
+        img = resize(img, CONFIG.MODEL.VGG16.INPUT_DIM)
+        
     return img
 
-def preprocessAnnos(annos, target='vgg16'):
+def preprocessAnnos(annos, mask_thresh=10):
+    processed = []
     for anno in annos:
         mask = anno.mask
+        orig_count = np.sum(mask > 0)
+        mask = cropImage(mask)
+        crop_count = np.sum(mask > 0)
+        if orig_count < mask_thresh or crop_count > mask_thresh:
+            # keep the annotations whose mask originally less than threshold
+            # or greater than threshold after cropped to avoid extremely cropped
+            # samples
+            anno.mask = mask
+            processed.append(anno)
+    return processed
 
-        if isVGG16(target):
-            size = (224, 224, 1)
-            mask = resizeImage(mask, size)
-
-        anno.mask = mask
-    return annos
-
-def resizeImage(img, size):
+def cropImage(img):
     # crop based on the center
     short_edge = min(img.shape[:2])
     crop_y = int((img.shape[0] - short_edge) / 2)
     crop_x = int((img.shape[1] - short_edge) / 2)
     crop_img = img[crop_y:crop_y+short_edge, crop_x:crop_x+short_edge]
-    
-    return np.resize(crop_img, size)
+    return crop_img
     
 
 '''
@@ -123,14 +128,6 @@ class BatchLoader(object):
         return len(self.data)
     
     def nextBatch(self, amount=None):
-        # adjust the amount of next batch based on the specified amount
-        # and the actual remaining number of data
-        num = self.batch_size if amount is None else amount
-        num = num if self.size > num else self.size
-
-        samples = self.data[:num]
-        self.data = self.data[num:]
-
         batch = edict({
             "ids" : [],
             "imgs" : [],
@@ -138,21 +135,34 @@ class BatchLoader(object):
             "labels" : []
         })
         
-        for sample in samples:
-            s_id = sample[0]
-            s_source = sample[1]
-
-            if s_source == PASCAL:
-                img, annos, labels = fetchDataFromPASCAL(s_id)
-            # add operations for other sources
-
-            img = preprocessImage(img, self.target)
-            annos = preprocessAnnos(annos, self.target)
+        num = self.batch_size if amount is None else amount
+        while num != 0:
+            # adjust the amount of next batch based on the specified amount
+            # and the actual remaining number of data
+            num = num if self.size > num else self.size
+            samples = self.data[:num]
+            self.data = self.data[num:]
+            num = 0
             
-            batch.ids.append(s_id)
-            batch.imgs.append(img)
-            batch.annos.append(annos)
-            batch.labels.append(labels)
+            for sample in samples:
+                s_id = sample[0]
+                s_source = sample[1]
+                
+                if s_source == PASCAL:
+                    img, annos, labels = fetchDataFromPASCAL(s_id)
+                    # add operations for other sources
+
+                img = preprocessImage(img, self.target)
+                annos = preprocessAnnos(annos)
+                if len(annos) == 0:
+                    # skip the sample without any annotation
+                    # increase counter 'num' to load images in next loop
+                    num += 1
+                else:
+                    batch.ids.append(s_id)
+                    batch.imgs.append(img)
+                    batch.annos.append(annos)
+                    batch.labels.append(labels)
 
         batch.imgs = np.asarray(batch.imgs)
         return batch

@@ -1,4 +1,5 @@
 import unittest, os, sys
+from skimage.io import imsave
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -30,39 +31,55 @@ class TestDataLoader(TestBase):
         self.assertTrue(bl.size == 10)
         
     def test_next(self):
-        bl = BatchLoader()
+        amount = None
+        batch_size = 10
+        bl = BatchLoader(batch_size=batch_size, amount=amount)
+        self.assertEqual(bl.size, 10103)
+        
         batch = bl.nextBatch()
-        self.assertTrue(batch)
+        self.assertNotEmpty(batch)
+        self.assertShapeEqual(batch.imgs, (10, 224, 224, 3))
+        
 
-        self.assertEqual(len(batch.ids), len(batch.imgs))
-        self.assertEqual(len(batch.annos), 10)
-        self.assertEqual(bl.size, 10103-10)
-
-        self.assertEqual(batch.imgs.shape, (10, 224, 224, 3))
-        self.assertEqual(batch.annos[0][0].mask.shape, (224, 224, 1))
-
-    def test_preprocess(self):
+    def test_preprocess_image(self):
         path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, "2008_004198.jpg")
         processed = preprocessImage(image)
 
-        print (processed.shape)
-        self.assertTrue(processed.shape == (224, 224, 3))
+        self.assertEqual(processed.shape, (224, 224, 3))
+        # out_path = os.path.join(root_path, "2008_004198.jpg")
+        # imsave(out_path, processed)
 
+    def test_preprocess_annos(self):
+        anno = np.asarray([
+            [0,0,1,1],
+            [1,1,0,0]
+        ])
+        anno = edict({
+            "mask" : anno
+        })
+        annos = [anno]
+        annos = preprocessAnnos(annos)
+        self.assertListEqual(annos[0].mask, [[0,1],[1,0]])
+
+        annos[0].mask = np.asarray([
+            [0,0,1,1,1,1,1,1,1,1],
+            [1,1,0,0,1,1,1,1,1,1]
+        ])
+        annos = preprocessAnnos(annos)
+        self.assertEmpty(annos)
         
 class TestFileManager(TestBase):
 
     def test_load_image(self):
         path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, "2008_004198.jpg")
-        self.assertTrue(image)
+        self.assertShapeEqual(image, (375, 500, 3))
         
     def test_load_list(self):
         path = os.path.join(PATH.ROOT, "src/layers_vgg16.txt")
         layers = loadListFromText(path)
-        self.assertTrue(len(layers) == 21)
-        self.assertTrue(layers[0] == "conv1_1")
-        
+        self.assertNotEmpty(layers)
         
 class TestAnnoParser(TestBase):
 
