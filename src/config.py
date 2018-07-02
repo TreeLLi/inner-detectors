@@ -24,26 +24,23 @@ Config for program parameters
 
 CONFIG = edict()
 
-# models
-CONFIG.MODEL = edict()
-
-CONFIG.MODEL.RANGE = ["vgg16"]
-
-CONFIG.MODEL.VGG16 = edict()
-CONFIG.MODEL.VGG16.ID = "vgg16"
-CONFIG.MODEL.VGG16.INPUT_DIM = (224, 224, 3)
-
 # dissection
 CONFIG.DIS = edict()
 
-CONFIG.DIS.MODEL = CONFIG.MODEL.VGG16.ID # the model to be dissected
-CONFIG.DIS.REFLECT = "linear" # "linear" or "deconvnet"
+CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
+CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
 
 CONFIG.DIS.IOU_THRESHOLD = 0.0
 CONFIG.DIS.TOP = 1
 
 CONFIG.DIS.REPORT_TEXT = True
 CONFIG.DIS.REPORT_FIGURE = False
+
+# models
+CONFIG.MODEL = edict()
+if CONFIG.DIS.MODEL == "VGG16":
+    CONFIG.MODEL.ID = "VGG16"
+    CONFIG.MODEL.INPUT_DIM = (224, 224, 3)
 
 
 '''
@@ -53,7 +50,6 @@ Config for program paths
 
 
 PATH = edict()
-
 
 _data_path = os.path.join(_root_path, "datasets")
 _pascal_path = os.path.join(_data_path, "pascal_part")
@@ -75,22 +71,26 @@ PATH.DATA.PASCAL = edict({
 })
 
 
+# output path
+PATH.OUT = edict()
+PATH.OUT.ROOT = os.path.join(_root_path, "output/")
+
+if CONFIG.DIS.MODEL = "VGG16":
+    PATH.OUT.MATCH = os.path.join(PATH.OUT.ROOT, "vgg16")
+    if not os.path.exists(PATH.OUT.MATCH):
+        os.makedirs(PATH.OUT.MATCH)
+
 # model path
 _model_path = os.path.join(_root_path, "pre-models")
-_vgg16_path = os.path.join(_model_path, "vgg16.npy")
 
 PATH.MODEL = edict()
 PATH.MODEL.ROOT = _model_path
+        
+if CONFIG.DIS.MODEL == "VGG16":
+    PATH.MODEL.PARAM = os.path.join(_model_path, "vgg16.npy")
+    PATH.MODEL.PROBE = os.path.join(_root_path, "src/probe_vgg16.txt")
+    PATH.MODEL.FIELDMAPS = os.path.join(PATH.OUT.MATCH, "vgg16_fieldmaps.pkl")
 
-# VGG16
-PATH.MODEL.VGG16 = edict()
-PATH.MODEL.VGG16.PARAM = _vgg16_path
-PATH.MODEL.VGG16.LAYERS = os.path.join(_root_path, "src/layers_vgg16.txt")
-
-
-# output path
-PATH.OUT = edict()
-PATH.OUT.MATCH = os.path.join(_root_path, "output/")
 
 
 '''
@@ -103,7 +103,7 @@ To determine status
 def isVGG16(model):
     if isinstance(model, Vgg16):
         return True
-    elif isinstance(model, str) and model.lower()==CONFIG.MODEL.VGG16.ID:
+    elif isinstance(model, str) and model.upper()=="VGG16":
         return True
     else:
         return False

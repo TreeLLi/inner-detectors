@@ -179,7 +179,7 @@ if __name__ == "__main__":
         model = ModelAgent()
         activ_maps = model.getActivMaps(images)
         
-        if CONFIG.DIS.REFLECT == "linear":
+        if CONFIG.DIS.REFLECT == "interpolation":
             from utils.dissection.interp_ref import reflect
         elif CONFIG.DIS.REFLECT == "deconvnet":
             from utils.dissection.deconvnet import reflect
