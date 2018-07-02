@@ -19,5 +19,10 @@ if root_path not in sys.path:
 
 from src.config import *
 
-def reflect(activ_maps, field_maps):
+def reflect(activ_maps, field_maps, annos):
     print ("linear interpolation")
+    for unit_id, unit_activ_maps in activ_maps.items():
+        layer = layerOfUnit(unit_id)
+        field_map = field_maps[layer]
+        input_dims_activs = upsampleL(field_map, unit_activ_maps)            
+        anno_dims_activ = [resize(activ, ]
