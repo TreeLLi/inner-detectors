@@ -24,8 +24,7 @@ class ModelAgent:
 
     def __init__(self, model=CONFIG.DIS.MODEL):
         # initialise base model according to the given str
-        if isVGG16(model):
-            self.model = Vgg16(PATH.MODEL.VGG16.PARAM)
+        self.model = Vgg16(PATH.MODEL.PARAM)
 
     def getActivMaps(self, imgs):
         if isVGG16(self.model):
@@ -40,9 +39,10 @@ class ModelAgent:
 
 def _getActivMaps(model, data):
     if isinstance(model, Vgg16):
-        layers = loadListFromText(PATH.MODEL.VGG16.LAYERS)
+        layers = loadListFromText(PATH.MODEL.PROBE)
         with tf.Session() as sess:
-            layers_activ_maps = sess.run([getattr(model, layer) for layer in layers], feed_dict=data)
+            layers_activ_maps = sess.run([getattr(model, layer) for layer in layers],
+                                         feed_dict=data)
 
         activ_maps = edict()
         for idx, layer in enumerate(layers):
@@ -50,7 +50,13 @@ def _getActivMaps(model, data):
             layer_activ_maps = layers_activ_maps[idx]
             unit_num = layer_activ_maps.shape[3]
             for unit_idx in range(unit_num):
-                unit_id = "{}_{}".format(layer, unit_idx)
+                unit_id = unitOfLayer(layer, unit_idx)
                 activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
 
         return activ_maps
+
+def unitOfLayer(layer, index):
+    return "{}_{}".format(layer, index)
+
+def layerOfUnit(unit_id):
+    return unit_id.split('_')[0]
