@@ -19,65 +19,106 @@ if root_path not in sys.path:
 from utils.model.vgg16 import Vgg16
 from utils.model.model_agent import *
 from utils.helper.data_loader import BatchLoader
+from utils.dissection.upsample import upsampled_shape
 from test_helper import TestBase
 from src.config import PATH
 
-class TestVGG16(TestBase):
-    
-    def test_init(self):
-        try:
-            model = Vgg16()
-        except:
-            print ("Exception: can not find the path for parameters file.")
-            model = Vgg16(PATH.MODEL.VGG16.PARAM)
 
+'''
+Test VGG16 model
+
+'''
+
+vgg16 = Vgg16(PATH.MODEL.PARAM)
+
+class TestVGG16(TestBase):
+    def test_init(self):
+        self.log()
+        self.assertIsNotNone(vgg16)
+        
     def test_eval(self):
-        bl = BatchLoader(amount=1)
+        self.log()
+        bl = BatchLoader(amount=10)
         batch = bl.nextBatch()
         imgs = batch.imgs
 
         input = tf.placeholder("float", imgs.shape)
         feed_dict = {input : imgs}
-        
-        vgg16 = Vgg16(PATH.MODEL.VGG16.PARAM)
         vgg16.build(input)
         
-        # with tf.Session() as sess:
-        #     prob, pool5 = sess.run([vgg16.prob, vgg16.pool5], feed_dict=feed_dict)
-        #     self.assertTrue(prob.any())
-        #     self.assertEqual(pool5.shape, (1, 7, 7, 512))
+        with tf.Session() as sess:
+            pool5 = sess.run(vgg16.pool5, feed_dict=feed_dict)
+            self.assertEqual(pool5.shape, (10, 7, 7, 512))
 
-        # print (vgg16.conv1_1.name)
-        graph = vgg16.conv1_1.graph
-        filter = graph.get_operation_by_name('conv5_1/filter')
-        conv = graph.get_operation_by_name('conv1_1/Conv2D')
+            
+'''
+Test ModelAgent 
+
+'''
+
+agent = ModelAgent(input_size=1)
         
-        print (filter.outputs[0].shape)
-        print (type(filter.node_def), type(filter.op_def))
-
 class TestModelAgent(TestBase):
-
     def test_init(self):
-        model = ModelAgent()
-        self.assertIsInstance(model.model, Vgg16)
+        self.log()
+        self.assertIsNotNone(agent)
 
     def test_get_activ_maps(self):
+        self.log()
         bl = BatchLoader(amount=1)
         batch = bl.nextBatch()
         imgs = batch.imgs
-
-        model = ModelAgent()
-        activ_maps = model.getActivMaps(imgs)
+        activ_maps = agent.getActivMaps(imgs, ['pool5'])
 
         # TODO - verify activation maps
-        self.assertEqual(len(activ_maps), 1472)
-        self.assertEqual(activ_maps.pool1_1.shape, (1, 112, 112))
-        self.assertEqual(activ_maps.pool2_1.shape, (1, 56, 56))
+        self.assertEqual(len(activ_maps), 512)
+        self.assertEqual(activ_maps.pool5_1.shape, (1, 7, 7))
+        self.assertEqual(activ_maps.pool5_2.shape, (1, 7, 7))
 
     def test_layer_unit(self):
+        self.log()
         unit_id = 'pool5_1'
         layer = layerOfUnit(unit_id)
         self.assertEqual(layer, 'pool5')
+
+    def test_layer_op(self):
+        self.log()
+        op = agent.graph.get_operation_by_name('conv1_1/filter')
+        layer = layerOfOp(op)
+        self.assertEqual(layer, 'conv1_1')
+
+    def test_layer_fieldmaps(self):
+        self.log()
+        field_maps = layerFieldmaps(agent.graph)
+        _, offset, size, strides = field_maps[0]
+        self.assertEqual(size, (3, 3))
+        self.assertEqual(offset, (-1, -1))
+        self.assertEqual(strides, (1, 1))
+
+        _, offset, size, strides = field_maps[-1]
+        self.assertEqual(size, (2, 2))
+        self.assertEqual(offset, (0, 0))
+        self.assertEqual(strides, (2, 2))
+
+    def test_stacked_fieldmaps(self):
+        self.log()
+        field_maps = stackedFieldmaps(agent.graph)
+
+        out_size = (224, 224)
+        field_map = field_maps['conv1_1']
+        offset, size, strides = field_map
+        self.assertEqual(size, (3, 3))
+        self.assertEqual(offset, (-1, -1))
+        self.assertEqual(strides, (1, 1))
+        
+        input_size = upsampled_shape(field_map, out_size)
+        self.assertEqual(input_size, (224, 224))
+
+        out_size = (7, 7)
+        field_map = field_maps['pool5']
+        input_size = upsampled_shape(field_map, out_size)
+        self.assertEqual(input_size, (224, 224))
+        
         
 if __name__ == "__main__":
     unittest.main()
