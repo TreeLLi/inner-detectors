@@ -25,7 +25,6 @@ activ_maps = model_agent.getActivMaps(imgs)
 class TestInterpRef(TestBase):
     def test_reflect(self):
         continue
-        
     
 class TestUpsample(TestBase):
     def test_upsampleL(self):

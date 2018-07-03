@@ -75,7 +75,7 @@ PATH.DATA.PASCAL = edict({
 PATH.OUT = edict()
 PATH.OUT.ROOT = os.path.join(_root_path, "output/")
 
-if CONFIG.DIS.MODEL = "VGG16":
+if CONFIG.DIS.MODEL == "VGG16":
     PATH.OUT.MATCH = os.path.join(PATH.OUT.ROOT, "vgg16")
     if not os.path.exists(PATH.OUT.MATCH):
         os.makedirs(PATH.OUT.MATCH)

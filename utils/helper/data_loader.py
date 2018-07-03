@@ -64,10 +64,8 @@ def preprocessImage(img, target='vgg16'):
 
     print ("original:{}".format(img.shape))
     
-    if isVGG16(target):
-        # pre-process images based on the requirements of VGG16
-        img = cropImage(img)
-        img = resize(img, CONFIG.MODEL.VGG16.INPUT_DIM)
+    img = cropImage(img)
+    img = resize(img, CONFIG.MODEL.INPUT_DIM)
         
     return img
 
@@ -102,7 +100,7 @@ Load data as batches
 
 class BatchLoader(object):
 
-    def __init__(self, sources=[PASCAL], target='vgg16', batch_size=10, amount=None):
+    def __init__(self, sources=[PASCAL], target='VGG16', batch_size=10, amount=None):
         self.batch_size = batch_size
         self.target = target
         
@@ -112,12 +110,10 @@ class BatchLoader(object):
                 continue
             elif source == PASCAL:
                 self.data += loadPASCALDataList()
-
             if amount is not None and len(self.data)>amount:
                 # discard remaining datasets, since the specified amount is reached
                 self.data = self.data[:amount]
                 break
-
         self.amount = amount if amount is not None else len(self.data)
         
     def __bool__(self):
