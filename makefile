@@ -1,3 +1,6 @@
+match:
+	python 'src/indr_matcher.py'
+
 testloader:
 	python 'test/data_loader_test.py' $(m)
 
