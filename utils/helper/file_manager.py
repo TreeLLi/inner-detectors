@@ -39,7 +39,7 @@ def loadListFromText(file_path):
 
 def loadObject(file_path):
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, 'rb') as f:
             obj = pickle.load(f)
             return obj
     except:
