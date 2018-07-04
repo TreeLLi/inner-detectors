@@ -30,8 +30,8 @@ CONFIG.DIS = edict()
 CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
 CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
 
-CONFIG.DIS.IOU_THRESHOLD = 0.0
-CONFIG.DIS.TOP = 1
+CONFIG.DIS.IOU_THRESHOLD = 0.3
+CONFIG.DIS.TOP = 3
 
 CONFIG.DIS.REPORT_TEXT = True
 CONFIG.DIS.REPORT_FIGURE = False
@@ -76,7 +76,7 @@ PATH.OUT = edict()
 PATH.OUT.ROOT = os.path.join(_root_path, "output/")
 
 if CONFIG.DIS.MODEL == "VGG16":
-    PATH.OUT.MATCH = os.path.join(PATH.OUT.ROOT, "vgg16")
+    PATH.OUT.MATCH = os.path.join(PATH.OUT.ROOT, "vgg16/")
     if not os.path.exists(PATH.OUT.MATCH):
         os.makedirs(PATH.OUT.MATCH)
 
