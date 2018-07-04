@@ -6,6 +6,9 @@ pascal_part
 pre-models/*.ckpt
 pre-models/*.npy
 
+# output
+output/
+
 # python cache
 __pycache__
 
