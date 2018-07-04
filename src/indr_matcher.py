@@ -153,9 +153,12 @@ def reportMatchesInText(matches):
             f.write(unit_line)
             
             for match in unit_matches:
-                match_line = "{:7} \tIoU: {:.2f} \tCount: {:2}\n".format(match.name, match.iou, match.count)
+                match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(match.name,
+                                                                          match.iou,
+                                                                          match.count)
                 f.write(match_line)
-
+            if len(unit_matches) == 0:
+                f.write("No significant matches found."
 
 def reportMatchesInFigure(matches):
     print ("placeholder")
@@ -169,23 +172,23 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=1)
+    bl = BatchLoader(amount=10)
     matches = None
     
     while bl:
         batch = bl.nextBatch()
         images = batch.imgs
-
-        model = ModelAgent()
+        annos = batch.annos
+        
+        model = ModelAgent(input_size=10)
         activ_maps = model.getActivMaps(images)
-        field_maps = model.getFieldmaps()
+        
         if CONFIG.DIS.REFLECT == "interpolation":
             from utils.dissection.interp_ref import reflect
+            field_maps = model.getFieldmaps()
+            ref_activ_maps = reflect(activ_maps, field_maps, annos)
         elif CONFIG.DIS.REFLECT == "deconvnet":
             from utils.dissection.deconvnet import reflect
-
-        ref_activ_maps = reflect(activ_maps, model=CONFIG.DIS.MODEL)
-        annos = batch.annos
 
         batch_matches = matchActivsAnnos(ref_activ_maps, annos)
         matches = combineMatches(matches, batch_matches)

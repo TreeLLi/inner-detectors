@@ -58,10 +58,13 @@ class ModelAgent:
         # load/generate field maps
         file_path = PATH.MODEL.FIELDMAPS if file_path is None else file_path
         if os.path.isfile(file_path):
+            print ("Fieldmaps: loading from the stored object file ...")
             field_maps = loadObject(file_path)
         else:
+            print ("Fieldmaps: generating ...")
             field_maps = stackedFieldmaps(self.graph)
             saveObject(field_maps, file_path)
+            print ("Fieldmaps: saved at {}".format(file_path))
         self.field_maps = field_maps
         return self.field_maps
         
