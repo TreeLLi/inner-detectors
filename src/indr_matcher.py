@@ -15,6 +15,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from utils.helper.data_loader import BatchLoader
+from utils.helper.file_manager import saveObject
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH
 from utils.dissection.iou import iou
@@ -32,11 +33,11 @@ def matchActivsAnnos(activs, annos):
     for unit, activs in activs.items():
         unit_matches = []
         for img_idx, activ in enumerate(activs):
-            print ("Matching: {} - image {}".format(unit, img_idx))
             img_annos = annos[img_idx]
             unit_img_matches = matchActivAnnos(activ, img_annos)
             unit_matches.append(unit_img_matches)
         matches[unit] = unit_matches
+        # print ("Matched: unit {}".format(unit))
 
     return matches
 
@@ -103,18 +104,23 @@ Organise results and report
 '''
 
 def reportMatchResults(matches):
+    # save original matches results
+    file_path = PATH.OUT.MATCH_OBJECT
+    saveObject(matches, file_path)
+    print ("Matches Results: object saved at {}".format(file_path))
     print ("Report Matches: begin...")
     iou_thres = CONFIG.DIS.IOU_THRESHOLD
     top = CONFIG.DIS.TOP
     retained_matches = filterMatches(matches, top, iou_thres)
-    print ("Report Matches: finish filtering.")
+    print ("Report Matches: filtering finished.")
     
     if CONFIG.DIS.REPORT_TEXT:
         reportMatchesInText(retained_matches)
-
+    print ("Report Matches: saved")
+        
     if CONFIG.DIS.REPORT_FIGURE:
         reportMatchesInFigure(retained_matches)
-        
+    
 
 def filterMatches(matches, top=3, iou_thres=0.00):
     for unit, unit_matches in matches.items():
@@ -144,8 +150,7 @@ def topIndex(top_n, iou):
         
 def reportMatchesInText(matches):
     model = CONFIG.DIS.MODEL
-    out_path = PATH.OUT.MATCH
-    file_path = "{}{}_matches.txt".format(out_path, model)
+    file_path = PATH.OUT.MATCH_REPORT
     
     with open(file_path, 'w') as f:
         for unit, unit_matches in matches.items():
@@ -158,7 +163,7 @@ def reportMatchesInText(matches):
                                                                           match.count)
                 f.write(match_line)
             if len(unit_matches) == 0:
-                f.write("No significant matches found."
+                f.write("No significant matches found.\n")
 
 def reportMatchesInFigure(matches):
     print ("placeholder")
@@ -172,15 +177,15 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=10)
+    bl = BatchLoader()
+    model = ModelAgent(input_size=10)
+
     matches = None
-    
     while bl:
         batch = bl.nextBatch()
         images = batch.imgs
         annos = batch.annos
         
-        model = ModelAgent(input_size=10)
         activ_maps = model.getActivMaps(images)
         
         if CONFIG.DIS.REFLECT == "interpolation":

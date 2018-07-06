@@ -115,6 +115,7 @@ class BatchLoader(object):
                 self.data = self.data[:amount]
                 break
         self.amount = amount if amount is not None else len(self.data)
+        self.batch_id = 0
         
     def __bool__(self):
         return self.size != 0
@@ -124,6 +125,7 @@ class BatchLoader(object):
         return len(self.data)
     
     def nextBatch(self, amount=None):
+        self.batch_id += 1
         batch = edict({
             "ids" : [],
             "imgs" : [],
@@ -161,4 +163,13 @@ class BatchLoader(object):
                     batch.labels.append(labels)
 
         batch.imgs = np.asarray(batch.imgs)
+        self.reportProgress()
         return batch
+
+    def reportProgress(self):
+        finished = self.amount - self.size
+        progress = 100 * float(finished) / self.amount
+        report = "Batch {}: load {} samples, progress {:.2f}%".format(self.batch_id,
+                                                                         finished,
+                                                                         progress)
+        print (report)

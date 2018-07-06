@@ -34,6 +34,7 @@ class ModelAgent:
                  input_dim=CONFIG.MODEL.INPUT_DIM):
         self.field_maps = None
         self.input_dim = (input_size, ) + tuple(input_dim)
+        self.probe = loadListFromText(PATH.MODEL.PROBE)
         # initialise base model according to the given str
         if isVGG16(model):
             self.model = Vgg16(PATH.MODEL.PARAM)
@@ -48,6 +49,7 @@ class ModelAgent:
             self.input_pholder = tf.placeholder("float", self.input_dim)
             self.model.build(self.input_pholder)
         feed_dict = {self.input_pholder : imgs}
+        layers = self.probe if layers is None else layers
         activ_maps = activMaps(self.model, feed_dict, layers)
         return activ_maps
 
@@ -75,7 +77,6 @@ Internal auxiliary functions
 
 def activMaps(model, data, layers):
     if isVGG16(model):
-        layers = loadListFromText(PATH.MODEL.PROBE) if layers is None else layers
         with tf.Session() as sess:
             layers_activ_maps = sess.run([getattr(model, layer) for layer in layers],
                                          feed_dict=data)

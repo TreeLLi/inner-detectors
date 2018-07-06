@@ -76,9 +76,11 @@ PATH.OUT = edict()
 PATH.OUT.ROOT = os.path.join(_root_path, "output/")
 
 if CONFIG.DIS.MODEL == "VGG16":
-    PATH.OUT.MATCH = os.path.join(PATH.OUT.ROOT, "vgg16/")
-    if not os.path.exists(PATH.OUT.MATCH):
-        os.makedirs(PATH.OUT.MATCH)
+    _vgg16_path = os.path.join(_output_path, "vgg16")
+    PATH.OUT.MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_matches.txt")
+    if not os.path.exists(_vgg16_path):
+        os.makedirs(_vgg16_path)
+    PATH.OUT.MATCH_OBJECT = os.path.join(_vgg16_path, "vgg16_matches.pkl")
 
 # model path
 _model_path = os.path.join(_root_path, "pre-models")
@@ -89,8 +91,7 @@ PATH.MODEL.ROOT = _model_path
 if CONFIG.DIS.MODEL == "VGG16":
     PATH.MODEL.PARAM = os.path.join(_model_path, "vgg16.npy")
     PATH.MODEL.PROBE = os.path.join(_root_path, "src/probe_vgg16.txt")
-    PATH.MODEL.FIELDMAPS = os.path.join(PATH.OUT.MATCH, "vgg16_fieldmaps.pkl")
-
+    PATH.MODEL.FIELDMAPS = os.path.join(_vgg16_path, "vgg16_fieldmaps.pkl")
 
 
 '''
