@@ -177,9 +177,10 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader()
+    bl = BatchLoader(amount=10)
     model = ModelAgent(input_size=10)
-
+    field_maps = model.getFieldmaps()
+    
     matches = None
     while bl:
         batch = bl.nextBatch()
@@ -190,7 +191,6 @@ if __name__ == "__main__":
         
         if CONFIG.DIS.REFLECT == "interpolation":
             from utils.dissection.interp_ref import reflect
-            field_maps = model.getFieldmaps()
             ref_activ_maps = reflect(activ_maps, field_maps, annos)
         elif CONFIG.DIS.REFLECT == "deconvnet":
             from utils.dissection.deconvnet import reflect
@@ -198,4 +198,4 @@ if __name__ == "__main__":
         batch_matches = matchActivsAnnos(ref_activ_maps, annos)
         matches = combineMatches(matches, batch_matches)
 
-    reportMatchResults(matches)
+    # reportMatchResults(matches)

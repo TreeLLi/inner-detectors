@@ -19,7 +19,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from src.config import PATH, CONFIG, isVGG16
-from utils.helper.file_manager import *
+from utils.helper.file_manager import loadImage, loadObject
 from utils.helper.anno_parser import parsePASCALPartAnno
 
 
@@ -32,12 +32,6 @@ Dataset-specific loading functions
 
 '''
 
-def loadPASCALDataList():
-    directory = PATH.DATA.PASCAL.ANNOS
-    postfix = "mat"
-    data = getFilesInDirectory(directory, postfix)
-    return [(x[x.rfind('/')+1:-4], PASCAL) for x in data]
-    
 def fetchDataFromPASCAL(identifier):
     img_postfix = ".jpg"
     anno_postfix = ".mat"
@@ -62,11 +56,9 @@ def preprocessImage(img, target='vgg16'):
     img = img / 255.0
     assert (img>=0).all() and (img<=1.0).all()
 
-    print ("original:{}".format(img.shape))
-    
     img = cropImage(img)
     img = resize(img, CONFIG.MODEL.INPUT_DIM)
-        
+    
     return img
 
 def preprocessAnnos(annos, mask_thresh=0.5):
@@ -104,16 +96,11 @@ class BatchLoader(object):
         self.batch_size = batch_size
         self.target = target
         
-        self.data = []
-        for source in sources:
-            if source not in SOURCE:
-                continue
-            elif source == PASCAL:
-                self.data += loadPASCALDataList()
-            if amount is not None and len(self.data)>amount:
-                # discard remaining datasets, since the specified amount is reached
-                self.data = self.data[:amount]
-                break
+        self.data = loadObject(PATH.DATA.MAPS)
+        if amount is not None and len(self.data) > amount:
+            # discard remaining datasets, since the specified amount is reached
+            self.data = self.data[:amount]
+
         self.amount = amount if amount is not None else len(self.data)
         self.batch_id = 0
         

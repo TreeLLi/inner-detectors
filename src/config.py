@@ -24,6 +24,10 @@ Config for program parameters
 
 CONFIG = edict()
 
+# datasets
+CONFIG.DATA = edict()
+CONFIG.DATA.SOURCES = ['PASCAL']
+
 # dissection
 CONFIG.DIS = edict()
 
@@ -63,6 +67,7 @@ PATH.ROOT = _root_path
 # dataset path
 PATH.DATA = edict()
 PATH.DATA.ROOT = _data_path
+PATH.DATA.MAPS = os.path.join(_data_path, "imgs_maps.txt")
 
 PATH.DATA.PASCAL = edict({
     "ROOT" : _pascal_path,
@@ -105,6 +110,13 @@ def isVGG16(model):
     if isinstance(model, Vgg16):
         return True
     elif isinstance(model, str) and model.upper()=="VGG16":
+        return True
+    else:
+        return False
+
+
+def isPASCAL(source):
+    if isinstance(source, str) and source.upper()=='PASCAL':
         return True
     else:
         return False
