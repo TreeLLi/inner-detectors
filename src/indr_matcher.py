@@ -62,7 +62,7 @@ def matchActivAnnos(activ, annos):
             matches[concept].iou = weightedIoU(iou_1, count_1, iou_2)
             matches[concept].count += 1
 
-        print ("\tConcept:{:6}\tIoU:{:.2f}\tCount:{:2}".format(concept, matches[concept].iou, matches[concept].count))
+        # print ("\tConcept:{:6}\tIoU:{:.2f}\tCount:{:2}".format(concept, matches[concept].iou, matches[concept].count))
     return matches
 
 

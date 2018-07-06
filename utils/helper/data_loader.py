@@ -69,17 +69,17 @@ def preprocessImage(img, target='vgg16'):
         
     return img
 
-def preprocessAnnos(annos, mask_thresh=10):
+def preprocessAnnos(annos, mask_thresh=0.5):
     processed = []
     for anno in annos:
         mask = anno.mask
         orig_count = np.sum(mask > 0)
         mask = cropImage(mask)
         crop_count = np.sum(mask > 0)
-        if orig_count < mask_thresh or crop_count > mask_thresh:
-            # keep the annotations whose mask originally less than threshold
-            # or greater than threshold after cropped to avoid extremely cropped
-            # samples
+        retain_ratio = crop_count / float(orig_count)
+        if retain_ratio  > mask_thresh:
+            # keep the annotations which retain at least
+            # 'mask_thresh' ratio of size of masks
             anno.mask = mask
             processed.append(anno)
     return processed
