@@ -1,6 +1,7 @@
 # datasets
 broden1_227
 pascal_part
+datasets/imgs_maps.txt
 
 # models
 pre-models/*.ckpt
