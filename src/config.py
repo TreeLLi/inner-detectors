@@ -31,6 +31,10 @@ CONFIG.DATA.SOURCES = ['PASCAL']
 # dissection
 CONFIG.DIS = edict()
 
+# 'fast' or 'normal'
+# fast: using stored object files to quickly generate required data
+# normal: run through normal procedures, like forward pass and reflection
+CONFIG.DIS.MODE = "fast"
 CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
 CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
 
@@ -46,7 +50,7 @@ if CONFIG.DIS.MODEL == "VGG16":
     CONFIG.MODEL.ID = "VGG16"
     CONFIG.MODEL.INPUT_DIM = (224, 224, 3)
 
-
+    
 '''
 Config for program paths
 
@@ -82,9 +86,8 @@ PATH.OUT.ROOT = os.path.join(_root_path, "output/")
 
 if CONFIG.DIS.MODEL == "VGG16":
     _vgg16_path = os.path.join(_output_path, "vgg16")
-    PATH.OUT.MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_matches.txt")
-    if not os.path.exists(_vgg16_path):
-        os.makedirs(_vgg16_path)
+    PATH.OUT.UNIT_MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_unit_matches.txt")
+    PATH.OUT.CONCEPT_MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_concept_matches.txt")
     PATH.OUT.MATCH_OBJECT = os.path.join(_vgg16_path, "vgg16_matches.pkl")
 
 # model path
@@ -97,7 +100,7 @@ if CONFIG.DIS.MODEL == "VGG16":
     PATH.MODEL.PARAM = os.path.join(_model_path, "vgg16.npy")
     PATH.MODEL.PROBE = os.path.join(_root_path, "src/probe_vgg16.txt")
     PATH.MODEL.FIELDMAPS = os.path.join(_vgg16_path, "vgg16_fieldmaps.pkl")
-
+    PATH.MODEL.REF_ACTIV_MAPS = os.path.join(_vgg16_path, "ref_activ_maps/")
 
 '''
 Auxilary functions
@@ -120,3 +123,6 @@ def isPASCAL(source):
         return True
     else:
         return False
+
+def isModeFast():
+    return CONFIG.DIS.MODE == 'Fast'

@@ -7,6 +7,7 @@ To match semantic concepts with hidden units in intermediate layers
 
 
 import os, sys
+import time
 from easydict import EasyDict as edict
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
@@ -15,12 +16,57 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from utils.helper.data_loader import BatchLoader
-from utils.helper.file_manager import saveObject
+from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
-from src.config import CONFIG, PATH
+from src.config import CONFIG, PATH, isModeFast
 from utils.dissection.iou import iou
 
+if CONFIG.DIS.REFLECT == "interpolation":
+    from utils.dissection.interp_ref import reflect
+elif CONFIG.DIS.REFLECT == "deconvnet":
+    from utils.dissection.deconvnet import reflect
+    
 
+'''
+Fast Mode Functions
+'''
+
+def loadRefActivMaps(img_names, layers):
+    ref_activ_maps = {}
+    for name in img_names:
+        file_path = os.path.join(PATH.MODEL.REF_ACTIV_MAPS, name+'.pkl')
+        ref_activ_map = loadObject(file_path)
+        ref_activ_map = retainLayers(ref_activ_map, layers)
+
+        for unit_id, ramap in ref_activ_map.items():
+            if unit_id not in ref_activ_maps:
+                ref_activ_maps[unit_id] = [ramap]
+            else:
+                ref_activ_maps[unit_id].append(ramap)
+    return ref_activ_maps
+
+def retainLayers(ramap, layers):
+    retained = {}
+    for layer in layers:
+        exist = False
+        for unit_id, m in ramap.items():
+            if layer in unit_id:
+                retained[unit_id] = m
+                exist = True
+        if not exist:
+            raise Exception("Exception: fast mode - incompleted stored data lacking layer {}"
+                            .format(layer))
+    return retained
+
+def saveRefActivMaps(ref_activ_maps, names):
+    for idx, name in enumerate(names):
+        ramap = {}
+        for unit_id, ramaps in ref_activ_maps.items():
+            ramap[unit_id] = ramaps[idx]
+        file_path = os.path.join(PATH.MODEL.REF_ACTIV_MAPS, name+'.pkl')
+        saveObject(ramap, file_path)
+
+    
 '''
 Match annotaions and activation maps
 
@@ -104,25 +150,32 @@ Organise results and report
 '''
 
 def reportMatchResults(matches):
-    # save original matches results
-    file_path = PATH.OUT.MATCH_OBJECT
-    saveObject(matches, file_path)
-    print ("Matches Results: object saved at {}".format(file_path))
+    # # save original matches results
+    # file_path = PATH.OUT.MATCH_OBJECT
+    # saveObject(matches, file_path)
+    # print ("Matches Results: object saved at {}".format(file_path))
+    
     print ("Report Matches: begin...")
     iou_thres = CONFIG.DIS.IOU_THRESHOLD
     top = CONFIG.DIS.TOP
-    retained_matches = filterMatches(matches, top, iou_thres)
+    unit_matches = filterMatches(matches, top, iou_thres)
+    concept_matches = rearrangeMatches(matches, top, iou_thres)
+    concept_matches = filterMatches(concept_matches, top, iou_thres)
     print ("Report Matches: filtering finished.")
-    
+
     if CONFIG.DIS.REPORT_TEXT:
-        reportMatchesInText(retained_matches)
+        file_path = PATH.OUT.UNIT_MATCH_REPORT
+        reportMatchesInText(unit_matches, file_path)
+        file_path = PATH.OUT.CONCEPT_MATCH_REPORT
+        reportMatchesInText(concept_matches, file_path)
     print ("Report Matches: saved")
         
     if CONFIG.DIS.REPORT_FIGURE:
-        reportMatchesInFigure(retained_matches)
+        reportMatchesInFigure(unit_matches)
     
 
 def filterMatches(matches, top=3, iou_thres=0.00):
+    filtered = {}
     for unit, unit_matches in matches.items():
         top_n = [None for x in range(top)]
 
@@ -135,11 +188,23 @@ def filterMatches(matches, top=3, iou_thres=0.00):
         retained = []
         for concept, iou in top_n:
             if iou >= iou_thres:
-                unit_matches[concept].name = concept
-                retained.append(unit_matches[concept])
-        matches[unit] = retained
-    return matches
-        
+                unit_match = edict(unit_matches[concept])
+                unit_match.name = concept
+                retained.append(unit_match)
+        filtered[unit] = retained
+    return filtered
+
+def rearrangeMatches(matches, top, iou_thres):
+    arranged = {}
+    for unit, unit_matches in matches.items():
+        for concept, cct_match in unit_matches.items():
+            if concept not in arranged:
+                unit_match = edict(cct_match)
+                arranged[concept] = {unit : unit_match}
+            else:
+                arranged[concept][unit] = edict(cct_match)
+    return arranged
+
 def topIndex(top_n, iou):
     for idx, cct in enumerate(top_n):
         if cct is None:
@@ -148,15 +213,13 @@ def topIndex(top_n, iou):
             return idx
     return None
         
-def reportMatchesInText(matches):
+def reportMatchesInText(matches, file_path):
     model = CONFIG.DIS.MODEL
-    file_path = PATH.OUT.MATCH_REPORT
     
     with open(file_path, 'w') as f:
         for unit, unit_matches in matches.items():
             unit_line = "\n{}:\n".format(unit)
             f.write(unit_line)
-            
             for match in unit_matches:
                 match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(match.name,
                                                                           match.iou,
@@ -164,10 +227,21 @@ def reportMatchesInText(matches):
                 f.write(match_line)
             if len(unit_matches) == 0:
                 f.write("No significant matches found.\n")
-
+        
 def reportMatchesInFigure(matches):
     print ("placeholder")
 
+
+'''
+Progress report
+
+'''
+
+def reportProgress(start, end, bid, num):
+    dur = end - start
+    effi = dur / num
+    print ("Batch {}: finished {} samples in {:.2f} sec. ({:.2f} sec. / sample)"
+           .format(bid, num, dur, effi))
     
 
 '''
@@ -180,22 +254,28 @@ if __name__ == "__main__":
     bl = BatchLoader(amount=10)
     model = ModelAgent(input_size=10)
     field_maps = model.getFieldmaps()
+    probe_layers = loadObject(PATH.MODEL.PROBE)
     
     matches = None
     while bl:
+        start = time.time()
         batch = bl.nextBatch()
+        names = batch.names
         images = batch.imgs
         annos = batch.annos
-        
-        activ_maps = model.getActivMaps(images)
-        
-        if CONFIG.DIS.REFLECT == "interpolation":
-            from utils.dissection.interp_ref import reflect
-            ref_activ_maps = reflect(activ_maps, field_maps, annos)
-        elif CONFIG.DIS.REFLECT == "deconvnet":
-            from utils.dissection.deconvnet import reflect
 
+        try:
+            ref_activ_maps = loadRefActivMaps(names, probe_layers)
+            print ("Ref Activ Maps: loaded from stroed objects")
+        except Exception as e:
+            print (e)
+            activ_maps = model.getActivMaps(images, probe_layers)
+            ref_activ_maps = reflect(activ_maps, field_maps, annos)
+            saveRefActivMaps(ref_activ_maps, names)
+            
         batch_matches = matchActivsAnnos(ref_activ_maps, annos)
         matches = combineMatches(matches, batch_matches)
-
-    # reportMatchResults(matches)
+        
+        reportProgress(start, time.time(), bl.batch_id, len(images))
+        
+    reportMatchResults(matches)
