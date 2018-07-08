@@ -3,7 +3,7 @@ match:
 	python 'src/indr_matcher.py'
 
 # preparation
-datasets:
+data:
 	python 'datasets/prepare_datasets.py'
 
 # test
