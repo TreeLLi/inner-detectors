@@ -1,6 +1,12 @@
+# main program
 match:
 	python 'src/indr_matcher.py'
 
+# preparation
+datasets:
+	python 'datasets/prepare_datasets.py'
+
+# test
 testloader:
 	python 'test/data_loader_test.py' $(m)
 
