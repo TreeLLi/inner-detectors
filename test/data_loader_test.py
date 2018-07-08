@@ -9,7 +9,7 @@ if root_path not in sys.path:
 from test_helper import TestBase
 from src.config import PATH
 from utils.helper.anno_parser import parsePASCALPartAnno
-from utils.helper.file_manager import loadImage, loadListFromText
+from utils.helper.file_manager import *
 from utils.helper.data_loader import *
 
 class TestDataLoader(TestBase):
@@ -80,6 +80,15 @@ class TestFileManager(TestBase):
         path = os.path.join(PATH.ROOT, "src/layers_vgg16.txt")
         layers = loadListFromText(path)
         self.assertNotEmpty(layers)
+
+    def test_save_object(self):
+        file_path = "output/test/test.pkl"
+        obj = [1]
+        saveObject(obj, file_path)
+        
+        self.assertTrue(os.path.isfile(file_path))
+        os.remove(file_path)
+        os.rmdir(os.path.dirname(file_path))
         
 class TestAnnoParser(TestBase):
 

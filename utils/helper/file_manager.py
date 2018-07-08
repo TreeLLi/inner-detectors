@@ -24,7 +24,7 @@ def getFilesInDirectory(directory, postfix=""):
     else:
         return [f for f in file_names if f.lower().endswith(postfix)]
 
-    
+
 '''
 Images I/O
 
@@ -60,21 +60,26 @@ def loadObject(file_path, dstru='list'):
                 return obj
         elif ftype == 'txt' and dstru == 'list':
             return loadListFromText(file_path)
-    except:
+    except Exception as e:
         print ("Error: failed to load object from file {}".format(file_path))
+        print ("Because {}".format(e))
         return None
 
 def saveObject(obj, file_path):
     try:
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
         ftype = file_path.split('.')[-1]
         if ftype == 'pkl':
             with open(file_path, 'wb+') as f:
                 pickle.dump(obj, f)
         elif ftype == 'txt' and isinstance(obj, list):
             saveListAsText(obj, file_path)
-    except:
+    except Exception as e:
         print ("Error: failed to save object at {}".format(file_path))
-
+        print ("Because {}".format(e))
+        
         
 '''
 List-Text I/O
@@ -106,3 +111,5 @@ def saveListAsText(obj, file_path):
                 f.write(line)
     except:
         print ("Error: failed to save list at {}".format(file_path))
+
+    
