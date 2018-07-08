@@ -103,6 +103,7 @@ class BatchLoader(object):
 
         self.amount = amount if amount is not None else len(self.data)
         self.batch_id = 0
+        self.sample_id = 0
         
     def __bool__(self):
         return self.size != 0
@@ -115,6 +116,7 @@ class BatchLoader(object):
         self.batch_id += 1
         batch = edict({
             "ids" : [],
+            "names" : [],
             "imgs" : [],
             "annos" : [],
             "labels" : []
@@ -130,11 +132,11 @@ class BatchLoader(object):
             num = 0
             
             for sample in samples:
-                s_id = sample[0]
+                s_name = sample[0]
                 s_source = sample[1]
                 
                 if s_source == PASCAL:
-                    img, annos, labels = fetchDataFromPASCAL(s_id)
+                    img, annos, labels = fetchDataFromPASCAL(s_name)
                     # add operations for other sources
 
                 img = preprocessImage(img, self.target)
@@ -144,19 +146,23 @@ class BatchLoader(object):
                     # increase counter 'num' to load images in next loop
                     num += 1
                 else:
-                    batch.ids.append(s_id)
+                    batch.ids.append(self.sample_id)
+                    self.sample_id += 1
+                    batch.names.append(s_name)
                     batch.imgs.append(img)
                     batch.annos.append(annos)
                     batch.labels.append(labels)
 
         batch.imgs = np.asarray(batch.imgs)
-        self.reportProgress()
+        self.reportProgress(len(batch.imgs))
         return batch
 
-    def reportProgress(self):
+    def reportProgress(self, num):
         finished = self.amount - self.size
         progress = 100 * float(finished) / self.amount
-        report = "Batch {}: load {} samples, progress {:.2f}%".format(self.batch_id,
-                                                                         finished,
-                                                                         progress)
+        report = "Batch {}: load {} samples, {}/{}({:.2f}%)".format(self.batch_id,
+                                                                    num,
+                                                                    finished,
+                                                                    self.amount,
+                                                                    progress)
         print (report)

@@ -34,7 +34,6 @@ class ModelAgent:
                  input_dim=CONFIG.MODEL.INPUT_DIM):
         self.field_maps = None
         self.input_dim = (input_size, ) + tuple(input_dim)
-        self.probe = loadListFromText(PATH.MODEL.PROBE)
         # initialise base model according to the given str
         if isVGG16(model):
             self.model = Vgg16(PATH.MODEL.PARAM)
@@ -42,14 +41,14 @@ class ModelAgent:
             self.model.build(self.input_pholder)
             self.graph = self.model.conv1_1.graph
         
-    def getActivMaps(self, imgs, layers=None):
+    def getActivMaps(self, imgs, layers):
+        # generate activation data by forward pass
         if imgs.shape != self.input_dim:
             # rebuild model for new input dimension
             self.input_dim = imgs.shape
             self.input_pholder = tf.placeholder("float", self.input_dim)
             self.model.build(self.input_pholder)
         feed_dict = {self.input_pholder : imgs}
-        layers = self.probe if layers is None else layers
         activ_maps = activMaps(self.model, feed_dict, layers)
         return activ_maps
 
@@ -69,7 +68,8 @@ class ModelAgent:
             print ("Fieldmaps: saved at {}".format(file_path))
         self.field_maps = field_maps
         return self.field_maps
-        
+
+    
 '''
 Internal auxiliary functions
 
