@@ -6,18 +6,38 @@ via the form of Base Class
 
 '''
 
-import unittest
+import unittest, os, sys
 import numpy as np
 import inspect
+
+curr_path = os.path.dirname(os.path.abspath(__file__))
+root_path = os.path.join(curr_path, "..")
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
+
+from src.config import PATH
+from utils.helper.file_manager import loadImage
+
+'''
+Test Base Class
+
+'''
 
 count = {}
 
 class TestBase(unittest.TestCase):
-
     def __init__(self, *args, **kwargs):
         super(TestBase, self).__init__(*args, **kwargs)
         self.longMessage = True
 
+    '''
+    instance getter
+    '''
+    def getImage(self, img_id="2008_004198.jpg"):
+        path = PATH.DATA.PASCAL.IMGS
+        image = loadImage(path, img_id)
+        return image
+        
     '''
     Print
 

@@ -8,7 +8,7 @@ To manage all files' inputs and outpus
 
 import os, sys
 import pickle
-from scipy.misc import imread
+from scipy.misc import imread, imsave
 
 
 '''
@@ -39,6 +39,12 @@ def loadImage(directory, file_name):
         print ("Error: failed to load image {}".format(file_name))
         return None
 
+def saveImage(directory, img):
+    try:
+        imsave(directory, img)
+    except Exception as e:
+        print (e)
+        print ("Error: failed to save image at {}".format(directory))
     
 '''
 Objects I/O

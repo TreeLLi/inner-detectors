@@ -16,5 +16,7 @@ testmatcher:
 testmodel:
 	python 'test/model_test.py' $(m)
 
+testplotter:
+	python 'test/plotter_test.py' $(m)
 clean:
 	rm -fr */__pycache__ */*/__pycache__
