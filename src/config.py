@@ -38,7 +38,7 @@ CONFIG.DIS.MODE = "fast"
 CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
 CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
 
-CONFIG.DIS.IOU_THRESHOLD = 0.3
+CONFIG.DIS.IOU_THRESHOLD = 0.1
 CONFIG.DIS.TOP = 3
 
 CONFIG.DIS.REPORT_TEXT = True
@@ -88,8 +88,9 @@ if CONFIG.DIS.MODEL == "VGG16":
     _vgg16_path = os.path.join(_output_path, "vgg16")
     PATH.OUT.UNIT_MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_unit_matches.txt")
     PATH.OUT.CONCEPT_MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_concept_matches.txt")
-    PATH.OUT.MATCH_OBJECT = os.path.join(_vgg16_path, "vgg16_matches.pkl")
-
+    PATH.OUT.UNIT_MATCHES = os.path.join(_vgg16_path, "vgg16_unit_matches.pkl")
+    PATH.OUT.CONCEPT_MATCHES = os.path.join(_vgg16_path, "vgg16_concept_matches.pkl")
+    
 # model path
 _model_path = os.path.join(_root_path, "pre-models")
 

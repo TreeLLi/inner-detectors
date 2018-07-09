@@ -20,11 +20,6 @@ from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
 from utils.dissection.iou import iou
-
-if CONFIG.DIS.REFLECT == "interpolation":
-    from utils.dissection.interp_ref import reflect
-elif CONFIG.DIS.REFLECT == "deconvnet":
-    from utils.dissection.deconvnet import reflect
     
 
 '''
@@ -150,11 +145,6 @@ Organise results and report
 '''
 
 def reportMatchResults(matches):
-    # # save original matches results
-    # file_path = PATH.OUT.MATCH_OBJECT
-    # saveObject(matches, file_path)
-    # print ("Matches Results: object saved at {}".format(file_path))
-    
     print ("Report Matches: begin...")
     iou_thres = CONFIG.DIS.IOU_THRESHOLD
     top = CONFIG.DIS.TOP
@@ -163,6 +153,12 @@ def reportMatchResults(matches):
     concept_matches = filterMatches(concept_matches, top, iou_thres)
     print ("Report Matches: filtering finished.")
 
+    # save object files for further probe
+    file_path = PATH.OUT.UNIT_MATCHES
+    saveObject(unit_matches, file_path)
+    file_path = PATH.OUT.CONCEPT_MATCHES
+    saveObject(concept_matches, file_path)
+    
     if CONFIG.DIS.REPORT_TEXT:
         file_path = PATH.OUT.UNIT_MATCH_REPORT
         reportMatchesInText(unit_matches, file_path)
@@ -253,8 +249,13 @@ Main program
 if __name__ == "__main__":
     bl = BatchLoader(amount=10)
     model = ModelAgent(input_size=10)
-    field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)
+
+    if CONFIG.DIS.REFLECT == "interpolation":
+        from utils.dissection.interp_ref import reflect
+        field_maps = model.getFieldmaps()
+    elif CONFIG.DIS.REFLECT == "deconvnet":
+        from utils.dissection.deconvnet import reflect
     
     matches = None
     while bl:
@@ -264,14 +265,9 @@ if __name__ == "__main__":
         images = batch.imgs
         annos = batch.annos
 
-        try:
-            ref_activ_maps = loadRefActivMaps(names, probe_layers)
-            print ("Ref Activ Maps: loaded from stroed objects")
-        except Exception as e:
-            print (e)
-            activ_maps = model.getActivMaps(images, probe_layers)
-            ref_activ_maps = reflect(activ_maps, field_maps, annos)
-            saveRefActivMaps(ref_activ_maps, names)
+        activ_maps = model.getActivMaps(images, probe_layers)
+        ref_activ_maps = reflect(activ_maps, field_maps, annos)
+        saveRefActivMaps(ref_activ_maps, names)
             
         batch_matches = matchActivsAnnos(ref_activ_maps, annos)
         matches = combineMatches(matches, batch_matches)
