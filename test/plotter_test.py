@@ -35,7 +35,17 @@ class TestPlotter(TestBase):
                 
         masks = [mask]
 
-        img = maskImage(img, masks, alpha=0.1)
+        mask = np.zeros(img.shape[:-1])
+        center = (0, 0)
+        size = (200, 200)
+        indices = [np.arange(c, c+s) for c, s in zip(center, size)]
+
+        for r in indices[0]:
+            for c in indices[1]:
+                mask[r][c] = 1
+        masks.append(mask)
+        
+        img = maskImage(img, masks, alpha=0.6)
         # cv2.imshow("test plotter", img)
         # cv2.waitKey(0)
         saveImage(os.path.join(root_path, "test_plotter.jpg"), img)

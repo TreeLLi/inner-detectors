@@ -15,22 +15,23 @@ Image mask
 '''
 
 # 5 colors in total
-ratios = np.arange(0.2, 1, 0.2)
-base = np.asarray([255.0, 255.0, 255.0])
-COLORS = [[int(round(b*r)) for b in base] for r in ratios]
+# ratios = np.arange(0.2, 1, 0.2)
+# base = np.asarray([255.0, 255.0, 255.0])
+# COLORS = [[int(round(b*r)) for b in base] for r in ratios]
 
+COLORS = [[255,0,0], [0,255,0]]
 
 def maskImage(img, masks, alpha=0.5, labels=None):
-    overlay = img.copy()
-    output = np.zeros_like(img)
+    output = img.copy()
     
     for idx, mask in enumerate(masks):
         indices = np.argwhere(mask > 0)
         color = COLORS[idx]
         # if two masks overlay, the later one is retained
-        overlay[indices[:, 0], indices[:, 1]] = [255, 0, 0]
-
-    cv2.addWeighted(overlay, alpha, img, 1-alpha, 0, output)
+        overlay = output.copy()
+        overlay[indices[:, 0], indices[:, 1]] = color
+        cv2.addWeighted(overlay, alpha, output, 1-alpha, 0, output)
+        
     return output
 
 '''
