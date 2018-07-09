@@ -79,7 +79,6 @@ def preprocessAnnos(annos, mask_thresh=0.5):
                 processed[name] = anno
             else:
                 # merge duplicated annos in same images
-                print ("Duplicated annos")
                 p_mask = processed[name].mask
                 p_mask += mask
                 p_mask[p_mask>1] = 1
