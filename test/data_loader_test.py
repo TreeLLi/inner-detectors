@@ -38,7 +38,7 @@ class TestDataLoader(TestBase):
         
         batch = bl.nextBatch()
         self.assertNotEmpty(batch)
-        self.assertShapeEqual(batch.imgs, (10, 224, 224, 3))
+        self.assertShape(batch.imgs, (10, 224, 224, 3))
         
 
     def test_preprocess_image(self):
@@ -56,6 +56,7 @@ class TestDataLoader(TestBase):
             [1,1,0,0]
         ])
         anno = edict({
+            "name" : "leg",
             "mask" : anno
         })
         annos = [anno]
@@ -68,13 +69,21 @@ class TestDataLoader(TestBase):
         ])
         annos = preprocessAnnos(annos)
         self.assertEmpty(annos)
+
+        anno = np.asarray([[0,0],[1,1]])
+        annos.append(edict({
+            "name" : "leg",
+            "mask" : anno
+        }))
+        annos = preprocessAnnos(annos, 0)
+        self.assertLength(annos, 1)
         
 class TestFileManager(TestBase):
 
     def test_load_image(self):
         path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, "2008_004198.jpg")
-        self.assertShapeEqual(image, (375, 500, 3))
+        self.assertShape(image, (375, 500, 3))
         
     def test_load_list(self):
         path = os.path.join(PATH.ROOT, "src/layers_vgg16.txt")

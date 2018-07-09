@@ -61,20 +61,29 @@ def preprocessImage(img, target='vgg16'):
     
     return img
 
+# preprocess annos for one single image
 def preprocessAnnos(annos, mask_thresh=0.5):
-    processed = []
+    processed = {}
     for anno in annos:
         mask = anno.mask
+        name = anno.name
         orig_count = np.sum(mask > 0)
         mask = cropImage(mask)
         crop_count = np.sum(mask > 0)
         retain_ratio = crop_count / float(orig_count)
-        if retain_ratio  > mask_thresh:
+        if retain_ratio >= mask_thresh:
             # keep the annotations which retain at least
             # 'mask_thresh' ratio of size of masks
-            anno.mask = mask
-            processed.append(anno)
-    return processed
+            if name not in processed:
+                anno.mask = mask
+                processed[name] = anno
+            else:
+                # merge duplicated annos in same images
+                print ("Duplicated annos")
+                p_mask = processed[name].mask
+                p_mask += mask
+                p_mask[p_mask>1] = 1
+    return list(processed.values())
 
 def cropImage(img):
     # crop based on the center

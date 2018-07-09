@@ -67,16 +67,16 @@ class TestBase(unittest.TestCase):
         return super(TestBase, self).assertListEqual(first, second, msg)
 
     def assertEmpty(self, expr):
-        return self.assertLengthEqual(expr, 0)
+        return self.assertLength(expr, 0)
     
     def assertNotEmpty(self, expr):
         length = len(expr)
         self.assertGreater(length, 0)
 
-    def assertLengthEqual(self, expr, length):
+    def assertLength(self, expr, length):
         self.assertEqual(len(expr), length)
 
-    def assertShapeEqual(self, expr, shape):
+    def assertShape(self, expr, shape):
         if isinstance(expr, np.ndarray):
             self.assertEqual(expr.shape, shape)
         # TODO - shape comparison of primitive list

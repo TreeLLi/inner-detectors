@@ -31,9 +31,6 @@ def _isMaskEmpty(mask):
                 return False
     return True
 
-# def save(name, data):
-#     with open(name, 'wb') as out:
-#         pickle.dump(data, out)
 
 '''
 Parse
@@ -101,19 +98,3 @@ def parsePASCALPartAnno(directory, file_name):
 #             save("pascal_annos_{}.pkl".format(count), maps)
             
 #     save("pascal_annos_all.pkl", maps)
-
-    
-'''
-Testing
-'''
-
-# if __name__ == "__main__":
-#     directory = "Annotations_Part"
-#     postfix = 'mat'
-
-#     parsePASCALPartAnnos(directory, postfix)
-
-#     # file_id, masks = parsePASCALPartAnno(directory+"/2008_001862.mat")
-#     # for cls, mask in masks.items():
-#     #     print (cls)
-        
