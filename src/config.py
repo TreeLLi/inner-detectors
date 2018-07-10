@@ -98,10 +98,11 @@ PATH.MODEL = edict()
 PATH.MODEL.ROOT = _model_path
         
 if CONFIG.DIS.MODEL == "VGG16":
-    PATH.MODEL.PARAM = os.path.join(_model_path, "vgg16.npy")
-    PATH.MODEL.PROBE = os.path.join(_root_path, "src/probe_vgg16.txt")
+    PATH.MODEL.PARAM = os.path.join(_model_path, "vgg16/vgg16_param.npy")
+    PATH.MODEL.CONFIG = os.path.join(_model_path, "vgg16/vgg16_config.json")
+    PATH.MODEL.PROBE = os.path.join(_root_path, "src/vgg16_probe.txt")
     PATH.MODEL.FIELDMAPS = os.path.join(_vgg16_path, "vgg16_fieldmaps.pkl")
-    PATH.MODEL.REF_ACTIV_MAPS = os.path.join(_vgg16_path, "ref_activ_maps/")
+    #PATH.MODEL.REF_ACTIV_MAPS = os.path.join(_vgg16_path, "ref_activ_maps/")
 
 '''
 Auxilary functions

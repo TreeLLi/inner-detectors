@@ -90,6 +90,16 @@ class TestFileManager(TestBase):
         layers = loadListFromText(path)
         self.assertNotEmpty(layers)
 
+    def test_load_json(self):
+        path = PATH.MODEL.CONFIG
+        config = loadObject(path)
+        self.assertIsNotNone(config)
+        self.assertLength(config, 22)
+        # check config of conv2_1
+        self.assertEqual(config[3][1]['ksize'], [3, 3, 64, 128])
+        # check config of pool2
+        self.assertEqual(config[5][1]['strides'], [1, 2, 2, 1])
+        
     def test_save_object(self):
         file_path = "output/test/test.pkl"
         obj = [1]

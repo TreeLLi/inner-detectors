@@ -8,6 +8,7 @@ To manage all files' inputs and outpus
 
 import os, sys
 import pickle
+import json
 from scipy.misc import imread, imsave
 
 
@@ -60,6 +61,9 @@ def loadObject(file_path, dstru='list'):
                 return obj
         elif ftype == 'txt' and dstru == 'list':
             return loadListFromText(file_path)
+        elif ftype == 'json':
+            with open(file_path, encoding='utf-8') as f:
+                return json.load(f)
     except Exception as e:
         print ("Error: failed to load object from file {}".format(file_path))
         print ("Because {}".format(e))
