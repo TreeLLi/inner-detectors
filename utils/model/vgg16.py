@@ -17,9 +17,7 @@ class Vgg16:
             vgg16_npy_path = path
             print(path)
 
-        self.data_dict = np.load(vgg16_npy_path, encoding='latin1').item()
-        print("npy file loaded")
-
+        
     def build(self, rgb):
         """
         load variable from npy to build the VGG
@@ -31,6 +29,11 @@ class Vgg16:
         print("build model started")
         rgb_scaled = rgb * 255.0
 
+        if not self.data_dict:
+            self.data_dict = np.load(vgg16_npy_path, encoding='latin1').item()
+            print("npy file loaded")
+
+        
         # Convert RGB to BGR
         red, green, blue = tf.split(axis=3, num_or_size_splits=3, value=rgb_scaled)
         assert red.get_shape().as_list()[1:] == [224, 224, 1]
@@ -77,7 +80,7 @@ class Vgg16:
 
         self.prob = tf.nn.softmax(self.fc8, name="prob")
 
-        #self.data_dict = None
+        self.data_dict = None
         print(("build model finished: %ds" % (time.time() - start_time)))
 
     def avg_pool(self, bottom, name):
