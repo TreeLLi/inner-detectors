@@ -9,16 +9,18 @@ VGG_MEAN = [103.939, 116.779, 123.68]
 
 
 class Vgg16:
-    def __init__(self, vgg16_npy_path=None):
-        if vgg16_npy_path is None:
+    def __init__(self, param_path=None, deconv=False):
+        if param_path is None:
             path = inspect.getfile(Vgg16)
             path = os.path.abspath(os.path.join(path, os.pardir))
             path = os.path.join(path, "vgg16.npy")
-            vgg16_npy_path = path
+            param_path = path
             print(path)
             
         self.data_dict = None
-        self.vgg16_npy_path = vgg16_npy_path
+        self.param_path = param_path
+        self.deconv = deconv
+        self.max_pool_switches = {}
         
     def build(self, rgb):
         """
@@ -32,9 +34,8 @@ class Vgg16:
         rgb_scaled = rgb * 255.0
 
         if not self.data_dict:
-            self.data_dict = np.load(self.vgg16_npy_path, encoding='latin1').item()
+            self.data_dict = np.load(self.param_path, encoding='latin1').item()
             print("npy file loaded")
-
         
         # Convert RGB to BGR
         red, green, blue = tf.split(axis=3, num_or_size_splits=3, value=rgb_scaled)
@@ -50,26 +51,26 @@ class Vgg16:
 
         self.conv1_1 = self.conv_layer(bgr, "conv1_1")
         self.conv1_2 = self.conv_layer(self.conv1_1, "conv1_2")
-        self.pool1 = self.max_pool(self.conv1_2, 'pool1')
+        self.pool1 = self.max_pool(self.conv1_2, 'pool1', self.deconv)
 
         self.conv2_1 = self.conv_layer(self.pool1, "conv2_1")
         self.conv2_2 = self.conv_layer(self.conv2_1, "conv2_2")
-        self.pool2 = self.max_pool(self.conv2_2, 'pool2')
+        self.pool2 = self.max_pool(self.conv2_2, 'pool2', self.deconv)
 
         self.conv3_1 = self.conv_layer(self.pool2, "conv3_1")
         self.conv3_2 = self.conv_layer(self.conv3_1, "conv3_2")
         self.conv3_3 = self.conv_layer(self.conv3_2, "conv3_3")
-        self.pool3 = self.max_pool(self.conv3_3, 'pool3')
+        self.pool3 = self.max_pool(self.conv3_3, 'pool3', self.deconv)
 
         self.conv4_1 = self.conv_layer(self.pool3, "conv4_1")
         self.conv4_2 = self.conv_layer(self.conv4_1, "conv4_2")
         self.conv4_3 = self.conv_layer(self.conv4_2, "conv4_3")
-        self.pool4 = self.max_pool(self.conv4_3, 'pool4')
+        self.pool4 = self.max_pool(self.conv4_3, 'pool4', self.deconv)
 
         self.conv5_1 = self.conv_layer(self.pool4, "conv5_1")
         self.conv5_2 = self.conv_layer(self.conv5_1, "conv5_2")
         self.conv5_3 = self.conv_layer(self.conv5_2, "conv5_3")
-        self.pool5 = self.max_pool(self.conv5_3, 'pool5')
+        self.pool5 = self.max_pool(self.conv5_3, 'pool5', self.deconv)
 
         self.fc6 = self.fc_layer(self.pool5, "fc6")
         assert self.fc6.get_shape().as_list()[1:] == [4096]
@@ -88,8 +89,24 @@ class Vgg16:
     def avg_pool(self, bottom, name):
         return tf.nn.avg_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
 
-    def max_pool(self, bottom, name):
-        return tf.nn.max_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
+    def max_pool(self, bottom, name, deconv):
+        ksize = [1, 2, 2, 1]
+        strides = [1, 2, 2, 1]
+        padding = 'SAME'
+        if not deconv:
+            return tf.nn.max_pool(bottom,
+                                  ksize=ksize,
+                                  strides=strides,
+                                  padding=padding,
+                                  name=name)
+        else:
+            pool, switches = tf.nn.max_pool_with_argmax(bottom,
+                                                        ksize=ksize,
+                                                        strides=strides,
+                                                        padding=padding,
+                                                        name=name)
+            self.max_pool_switches[name] = switches
+            return pool
 
     def conv_layer(self, bottom, name):
         with tf.variable_scope(name):

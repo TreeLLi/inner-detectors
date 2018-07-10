@@ -31,26 +31,49 @@ class ModelAgent:
     def __init__(self,
                  model=CONFIG.DIS.MODEL,
                  input_size=10,
-                 input_dim=CONFIG.MODEL.INPUT_DIM):
+                 input_dim=CONFIG.MODEL.INPUT_DIM,
+                 deconv=False):
         self.field_maps = None
         self.input_dim = (input_size, ) + tuple(input_dim)
+        self.deconv = deconv
+        
         # initialise base model according to the given str
         if isVGG16(model):
-            self.model = Vgg16(PATH.MODEL.PARAM)
+            self.model = Vgg16(PATH.MODEL.PARAM, deconv=deconv)
             self.input_pholder = tf.placeholder("float", self.input_dim)
             self.model.build(self.input_pholder)
             self.graph = self.model.conv1_1.graph
         
     def getActivMaps(self, imgs, layers):
+        print ("Fetching activation maps for specific units ...")
         # generate activation data by forward pass
         if imgs.shape != self.input_dim:
             # rebuild model for new input dimension
             self.input_dim = imgs.shape
             self.input_pholder = tf.placeholder("float", self.input_dim)
             self.model.build(self.input_pholder)
+
+        fetches = {"activs" : {}}
+        for layer in layers:
+            fetches['activs'][layer] = getattr(self.model, layer)
+        if self.deconv:
+            fetches['switches'] = self.model.max_pool_switches
         feed_dict = {self.input_pholder : imgs}
-        activ_maps = activMaps(self.model, feed_dict, layers)
-        return activ_maps
+        with tf.Session() as sess:
+            results = sess.run(fetches, feed_dict=feed_dict)
+
+        activ_maps = edict()
+        for layer, layer_activ_maps in results['activs'].items():
+            # the dimensions of activation maps: (img_num, width, length, filter_num)
+            unit_num = layer_activ_maps.shape[3]
+            for unit_idx in range(unit_num):
+                unit_id = unitOfLayer(layer, unit_idx)
+                activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
+
+        if not self.deconv:
+            return activ_maps
+        else:
+            return activ_maps, results['switches']
 
     def getFieldmaps(self, file_path=None):
         if self.field_maps is not None:
@@ -69,28 +92,12 @@ class ModelAgent:
         self.field_maps = field_maps
         return self.field_maps
 
-    
+
 '''
 Internal auxiliary functions
 
 '''
 
-def activMaps(model, data, layers):
-    if isVGG16(model):
-        with tf.Session() as sess:
-            layers_activ_maps = sess.run([getattr(model, layer) for layer in layers],
-                                         feed_dict=data)
-
-        activ_maps = edict()
-        for idx, layer in enumerate(layers):
-            # the dimensions of activation maps: (img_num, width, length, filter_num)
-            layer_activ_maps = layers_activ_maps[idx]
-            unit_num = layer_activ_maps.shape[3]
-            for unit_idx in range(unit_num):
-                unit_id = unitOfLayer(layer, unit_idx)
-                activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
-
-        return activ_maps
 
 def stackedFieldmaps(graph):
     field_maps = {}

@@ -70,6 +70,7 @@ Match annotaions and activation maps
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
 def matchActivsAnnos(activs, annos):
+    print ("Matching activations and annotations ...")
     matches = edict()
     for unit, activs in activs.items():
         unit_matches = []
@@ -115,6 +116,7 @@ def weightedIoU(iou_1, count_1, iou_2, count_2=1):
 
 # combine two matches results
 def combineMatches(matches, batch_matches):
+    print ("Integrating matches results of a batch into final results ...")
     if batch_matches is None:
         return matches
     elif matches is None:
@@ -248,14 +250,17 @@ Main program
 
 if __name__ == "__main__":
     bl = BatchLoader(amount=10)
-    model = ModelAgent(input_size=10)
     probe_layers = loadObject(PATH.MODEL.PROBE)
-
-    if CONFIG.DIS.REFLECT == "interpolation":
+    reflect_mode = CONFIG.DIS.REFLECT
+    
+    if reflect_mode == "interpolation":
         from utils.dissection.interp_ref import reflect
+        model = ModelAgent()
         field_maps = model.getFieldmaps()
-    elif CONFIG.DIS.REFLECT == "deconvnet":
+        
+    elif reflect_mode == "deconvnet":
         from utils.dissection.deconvnet import reflect
+        model = ModelAgent(deconv=True)
     
     matches = None
     while bl:
@@ -265,16 +270,16 @@ if __name__ == "__main__":
         images = batch.imgs
         annos = batch.annos
 
-        print ("Fetching activation maps for specific units ...")
-        activ_maps = model.getActivMaps(images, probe_layers)
-        print ("Mapping activation maps back to input images ...")
-        ref_activ_maps = reflect(activ_maps, field_maps, annos)
+        if reflect_mode == "interpolation":
+            activ_maps = model.getActivMaps(images, probe_layers)
+            ref_activ_maps = reflect(activ_maps, field_maps, annos)
+        elif reflect_mode == "deconvnet":
+            activ_maps, switches = model.getActivMaps(images, probe_layers)
+            ref_activ_maps = reflect(activ_maps, switches)
         activ_maps = None
-
-        print ("Matching activations and annotations ...")
+        
         batch_matches = matchActivsAnnos(ref_activ_maps, annos)
         ref_activ_maps = None
-        print ("Integrating matches results of a batch into final results ...")
         matches = combineMatches(matches, batch_matches)
         batch_matches = None
         

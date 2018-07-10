@@ -29,8 +29,7 @@ Test VGG16 model
 
 '''
 
-vgg16 = Vgg16(PATH.MODEL.PARAM)
-
+vgg16 = Vgg16(PATH.MODEL.PARAM, deconv=True)
 class TestVGG16(TestBase):
     def test_init(self):
         self.log()
@@ -70,10 +69,16 @@ class TestModelAgent(TestBase):
         imgs = batch.imgs
         activ_maps = agent.getActivMaps(imgs, ['pool5'])
 
-        # TODO - verify activation maps
-        self.assertEqual(len(activ_maps), 512)
+        self.assertLength(activ_maps, 512)
         self.assertEqual(activ_maps.pool5_1.shape, (1, 7, 7))
         self.assertEqual(activ_maps.pool5_2.shape, (1, 7, 7))
+
+        agent_2 = ModelAgent(input_size=1, deconv=True)
+        activ_maps, switches = agent_2.getActivMaps(imgs, ['pool5'])
+
+        self.assertLength(activ_maps, 512)
+        self.assertEqual(activ_maps.pool5_1.shape, (1, 7, 7))
+        self.assertLength(switches, 5)
 
     def test_layer_unit(self):
         self.log()

@@ -29,6 +29,7 @@ Activation maps reflection
 '''
 
 def reflect(activ_maps, field_maps, annos):
+    print ("Mapping activation maps back to input images ...")
     for unit_id, unit_activ_maps in activ_maps.items():
         layer = layerOfUnit(unit_id)
         field_map = field_maps[layer]
