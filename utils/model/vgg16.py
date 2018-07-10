@@ -32,7 +32,7 @@ class Vgg16:
         rgb_scaled = rgb * 255.0
 
         if not self.data_dict:
-            self.data_dict = np.load(vgg16_npy_path, encoding='latin1').item()
+            self.data_dict = np.load(self.vgg16_npy_path, encoding='latin1').item()
             print("npy file loaded")
 
         
