@@ -16,7 +16,8 @@ class Vgg16:
             path = os.path.join(path, "vgg16.npy")
             vgg16_npy_path = path
             print(path)
-
+            
+        self.data_dict = None
         
     def build(self, rgb):
         """
