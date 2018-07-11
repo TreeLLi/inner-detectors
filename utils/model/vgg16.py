@@ -5,6 +5,8 @@ import numpy as np
 import tensorflow as tf
 import time
 
+from easydict import EasyDict as edict
+
 from utils.helper.file_manager import loadObject
 
 VGG_MEAN = [103.939, 116.779, 123.68]
@@ -13,12 +15,19 @@ VGG_MEAN = [103.939, 116.779, 123.68]
 class Vgg16:
     def __init__(self, config, param_path, deconv=False):        
         self.data_dict = None
-        self.config = loadObject(config)
         self.param_path = param_path
         self.deconv = deconv
+
+        config = loadObject(config)
+        self.layers = []
+        self.configs = {}
+        for layer_config in config:
+            name = layer_config[0]
+            self.layers.append(name)
+            self.configs[name] = edict(layer_config[1])
         
         self.max_pool_switches = {}
-        self.layers = {}
+        self.layer_tensors = {}
         
     def build(self, rgb):
         """
@@ -83,32 +92,31 @@ class Vgg16:
 
         prev_layer = bgr
         
-        for layer_config in self.config:
-            name = layer_config[0]
-            layer_type = layer_config[1]
-            config = layer_config[2]
-
+        for name in self.layers:
+            config = self.configs[name]
+            layer_type = config.type
+            
             if layer_type == 'conv':
-                strides = config['strides']
-                padding = config['padding']
+                strides = config.strides
+                padding = config.padding
                 layer = self.conv_layer(prev_layer, name, strides, padding)
             elif layer_type == 'pool':
-                ksize = config['ksize']
-                strides = config['strides']
-                padding = config['padding']
+                ksize = config.ksize
+                strides = config.strides
+                padding = config.padding
                 layer = self.max_pool(prev_layer, name, ksize, strides, padding, self.deconv)
             elif layer_type == 'fc':
                 layer = self.fc_layer(prev_layer, name)
-                if "relu" in config and config['relu']:
+                if "relu" in config and config.relu:
                     layer = tf.nn.relu(layer)
             elif layer_type == 'classifier':
-                classifier = config['classifier']
+                classifier = config.classifier
                 if classifier == 'softmax':
                     layer = tf.nn.softmax(prev_layer, name=name)
             else:
                 print ("Error: unknown layer_type {} for layer {}".format(layer_type, name))
 
-            self.layers[name] = layer
+            self.layer_tensors[name] = layer
             prev_layer = layer
             
         
@@ -116,13 +124,28 @@ class Vgg16:
         print(("build model finished: %ds" % (time.time() - start_time)))
 
 
-    def getLayer(self, layer):
-        if isinstance(layer, list):
-            return [self.layers[x] for x in layer]
-        elif isinstance(layer, str):
-            return self.layers[layer]
-
+    def getUpLayer(self, layer):
+        idx = self.layers.index(layer)
+        if idx < len(self.layers)-1:
+            return self.layers[idx+1]
+        else:
+            raise Exception("Error: try to access an unexisted up layer.")
         
+    def getLayerTensor(self, layer):
+        if isinstance(layer, list):
+            return [self.layer_tensors[x] for x in layer]
+        elif isinstance(layer, str):
+            return self.layer_tensors[layer]
+
+    def getConfig(self, layer):
+        if isinstance(layer, list):
+            return [self.configs[x] for x in layer]
+        elif isinstance(layer, str):
+            return self.configs[layer]
+
+    def getSwitchTensor(self, layer):
+        return self.max_pool_switches[layer]
+    
     def max_pool(self, bottom, name, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', deconv=False):
         if not deconv:
             return tf.nn.max_pool(bottom,

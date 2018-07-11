@@ -1,144 +1,166 @@
 [
-    ["conv1_1", "conv", {
+    ["conv1_1", {
+	"type" : "conv",
 	"ksize" : [3, 3, 3, 64],
 	"b" : [64],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv1_2", "conv", {
+    ["conv1_2", {
+	"type" : "conv",
 	"ksize" : [3, 3, 64, 64],
 	"b" : [64],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["pool1", "pool", {
+    ["pool1", {
+	"type" : "pool",
 	"ksize" : [1, 2, 2, 1],
 	"strides" : [1, 2, 2, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv2_1", "conv", {
+    ["conv2_1", {
+	"type" : "conv",
 	"ksize" : [3, 3, 64, 128],
 	"b" : [128],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv2_2", "conv", {
+    ["conv2_2", {
+	"type" : "conv",
 	"ksize" : [3, 3, 128, 128],
 	"b" : [128],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["pool2", "pool", {
+    ["pool2", {
+	"type" : "pool",
 	"ksize" : [1, 2, 2, 1],
 	"strides" : [1, 2, 2, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv3_1", "conv", {
+    ["conv3_1", {
+	"type" : "conv",
 	"ksize" : [3, 3, 128, 256],
 	"b" : [256],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv3_2", "conv", {
+    ["conv3_2", {
+	"type" : "conv",
 	"ksize" : [3, 3, 256, 256],
 	"b" : [256],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv3_3", "conv", {
+    ["conv3_3", {
+	"type" : "conv",
 	"ksize" : [3, 3, 256, 256],
 	"b" : [256],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["pool3", "pool", {
+    ["pool3", {
+	"type" : "pool",
 	"ksize" : [1, 2, 2, 1],
 	"strides" : [1, 2, 2, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv4_1", "conv", {
+    ["conv4_1", {
+	"type" : "conv",
 	"ksize" : [3, 3, 256, 512],
 	"b" : [512],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv4_2", "conv", {
+    ["conv4_2", {
+	"type" : "conv",
 	"ksize" : [3, 3, 512, 512],
 	"b" : [512],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv4_3", "conv", {
+    ["conv4_3", {
+	"type" : "conv",
 	"ksize" : [3, 3, 512, 512],
 	"b" : [512],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["pool4", "pool", {
+    ["pool4", {
+	"type" : "pool",
 	"ksize" : [1, 2, 2, 1],
 	"strides" : [1, 2, 2, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv5_1", "conv", {
+    ["conv5_1", {
+	"type" : "conv",
 	"ksize" : [3, 3, 512, 512],
 	"b" : [512],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv5_2", "conv", {
+    ["conv5_2", {
+	"type" : "conv",
 	"ksize" : [3, 3, 512, 512],
 	"b" : [512],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["conv5_3", "conv", {
+    ["conv5_3", {
+	"type" : "conv",
 	"ksize" : [3, 3, 512, 512],
 	"b" : [512],
 	"strides" : [1, 1, 1, 1],
 	"padding" : "SAME"
     }],
     
-    ["pool5", "pool", {
+    ["pool5", {
+	"type" : "pool",
 	"ksize" : [1, 2, 2, 1],
 	"strides" : [1, 2, 2, 1],
 	"padding" : "SAME"
     }],
     
-    ["fc6", "fc", {
+    ["fc6", {
+	"type" : "fc",
 	"w" : [4096],
 	"b" : [4096],
 	"relu" : true
     }],
     
-    ["fc7", "fc", {
+    ["fc7", {
+	"type" : "fc",
 	"w" : [4096],
 	"b" : [4096],
 	"relu" : true
     }],
     
-    ["fc8", "fc", {
+    ["fc8", {
+	"type" : "fc",
 	"w" : [1000],
 	"b" : [1000],
 	"relu" : false
     }],
     
-    ["prob", "classifier", {
+    ["prob", {
+	"type" : "classifier",
 	"classifier" : "softmax"
     }]
 ]

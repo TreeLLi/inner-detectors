@@ -46,7 +46,7 @@ class TestVGG16(TestBase):
         vgg16.build(input)
         
         with tf.Session() as sess:
-            pool5 = sess.run(vgg16.getLayer('pool5'), feed_dict=feed_dict)
+            pool5 = sess.run(vgg16.getLayerTensor('pool5'), feed_dict=feed_dict)
             self.assertEqual(pool5.shape, (10, 7, 7, 512))
 
             
@@ -80,11 +80,11 @@ class TestModelAgent(TestBase):
         self.assertEqual(activ_maps.pool5_1.shape, (1, 7, 7))
         self.assertLength(switches, 5)
 
-    def test_layer_unit(self):
-        self.log()
-        unit_id = 'pool5_1'
-        layer = layerOfUnit(unit_id)
-        self.assertEqual(layer, 'pool5')
+    # def test_layer_unit(self):
+    #     self.log()
+    #     unit_id = 'pool5_1'
+    #     layer = layerOfUnit(unit_id)
+    #     self.assertEqual(layer, 'pool5')
 
     # def test_layer_op(self):
     #     self.log()
