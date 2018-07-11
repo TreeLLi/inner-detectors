@@ -1,141 +1,144 @@
 [
-	["conv1_1", {
-		"ksize" : [3, 3, 3, 64],
-		"b" : [64],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv1_2", {
-		"ksize" : [3, 3, 64, 64],
-		"b" : [64],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["pool1", {
-		"ksize" : [1, 2, 2, 1],
-		"strides" : [1, 2, 2, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv2_1", {
-		"ksize" : [3, 3, 64, 128],
-		"b" : [128],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv2_2", {
-		"ksize" : [3, 3, 128, 128],
-		"b" : [128],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["pool2", {
-		"ksize" : [1, 2, 2, 1],
-		"strides" : [1, 2, 2, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv3_1", {
-		"ksize" : [3, 3, 128, 256],
-		"b" : [256],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv3_2", {
-		"ksize" : [3, 3, 256, 256],
-		"b" : [256],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv3_3", {
-		"ksize" : [3, 3, 256, 256],
-		"b" : [256],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["pool3", {
-		"ksize" : [1, 2, 2, 1],
-		"strides" : [1, 2, 2, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv4_1", {
-		"ksize" : [3, 3, 256, 512],
-		"b" : [512],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv4_2", {
-		"ksize" : [3, 3, 512, 512],
-		"b" : [512],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv4_3", {
-		"ksize" : [3, 3, 512, 512],
-		"b" : [512],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["pool4", {
-		"ksize" : [1, 2, 2, 1],
-		"strides" : [1, 2, 2, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv5_1", {
-		"ksize" : [3, 3, 512, 512],
-		"b" : [512],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv5_2", {
-		"ksize" : [3, 3, 512, 512],
-		"b" : [512],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["conv5_3", {
-		"ksize" : [3, 3, 512, 512],
-		"b" : [512],
-		"strides" : [1, 1, 1, 1],
-		"padding" : "SAME"
-	}],
-	
-	["pool5", {
-		"ksize" : [1, 2, 2, 1],
-		"strides" : [1, 2, 2, 1],
-		"padding" : "SAME"
-	}],
-	
-	["fc1", {
-		"w" : [4096],
-		"b" : [4096]
-	}],
-	
-	["fc1", {
-		"w" : [4096],
-		"b" : [4096]
-	}],
-	
-	["fc1", {
-		"w" : [1000],
-		"b" : [1000]
-	}],
-	
-	["prob", {
-		"classifier" : "softmax"
-	}]
+    ["conv1_1", "conv", {
+	"ksize" : [3, 3, 3, 64],
+	"b" : [64],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv1_2", "conv", {
+	"ksize" : [3, 3, 64, 64],
+	"b" : [64],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["pool1", "pool", {
+	"ksize" : [1, 2, 2, 1],
+	"strides" : [1, 2, 2, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv2_1", "conv", {
+	"ksize" : [3, 3, 64, 128],
+	"b" : [128],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv2_2", "conv", {
+	"ksize" : [3, 3, 128, 128],
+	"b" : [128],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["pool2", "pool", {
+	"ksize" : [1, 2, 2, 1],
+	"strides" : [1, 2, 2, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv3_1", "conv", {
+	"ksize" : [3, 3, 128, 256],
+	"b" : [256],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv3_2", "conv", {
+	"ksize" : [3, 3, 256, 256],
+	"b" : [256],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv3_3", "conv", {
+	"ksize" : [3, 3, 256, 256],
+	"b" : [256],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["pool3", "pool", {
+	"ksize" : [1, 2, 2, 1],
+	"strides" : [1, 2, 2, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv4_1", "conv", {
+	"ksize" : [3, 3, 256, 512],
+	"b" : [512],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv4_2", "conv", {
+	"ksize" : [3, 3, 512, 512],
+	"b" : [512],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv4_3", "conv", {
+	"ksize" : [3, 3, 512, 512],
+	"b" : [512],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["pool4", "pool", {
+	"ksize" : [1, 2, 2, 1],
+	"strides" : [1, 2, 2, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv5_1", "conv", {
+	"ksize" : [3, 3, 512, 512],
+	"b" : [512],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv5_2", "conv", {
+	"ksize" : [3, 3, 512, 512],
+	"b" : [512],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["conv5_3", "conv", {
+	"ksize" : [3, 3, 512, 512],
+	"b" : [512],
+	"strides" : [1, 1, 1, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["pool5", "pool", {
+	"ksize" : [1, 2, 2, 1],
+	"strides" : [1, 2, 2, 1],
+	"padding" : "SAME"
+    }],
+    
+    ["fc6", "fc", {
+	"w" : [4096],
+	"b" : [4096],
+	"relu" : true
+    }],
+    
+    ["fc7", "fc", {
+	"w" : [4096],
+	"b" : [4096],
+	"relu" : true
+    }],
+    
+    ["fc8", "fc", {
+	"w" : [1000],
+	"b" : [1000],
+	"relu" : false
+    }],
+    
+    ["prob", "classifier", {
+	"classifier" : "softmax"
+    }]
 ]

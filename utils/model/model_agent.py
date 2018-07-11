@@ -39,10 +39,10 @@ class ModelAgent:
         
         # initialise base model according to the given str
         if isVGG16(model):
-            self.model = Vgg16(PATH.MODEL.PARAM, deconv=deconv)
+            self.model = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=deconv)
             self.input_pholder = tf.placeholder("float", self.input_dim)
             self.model.build(self.input_pholder)
-            self.graph = self.model.conv1_1.graph
+            self.graph = self.model.getLayer('pool1').graph
         
     def getActivMaps(self, imgs, layers):
         print ("Fetching activation maps for specific units ...")
@@ -55,7 +55,7 @@ class ModelAgent:
 
         fetches = {"activs" : {}}
         for layer in layers:
-            fetches['activs'][layer] = getattr(self.model, layer)
+            fetches['activs'][layer] = self.model.getLayer(layer)
         if self.deconv:
             fetches['switches'] = self.model.max_pool_switches
         feed_dict = {self.input_pholder : imgs}
@@ -86,7 +86,7 @@ class ModelAgent:
             field_maps = loadObject(file_path)
         else:
             print ("Fieldmaps: generating ...")
-            field_maps = stackedFieldmaps(self.graph)
+            field_maps = stackedFieldmaps(self.model)
             saveObject(field_maps, file_path)
             print ("Fieldmaps: saved at {}".format(file_path))
         self.field_maps = field_maps
@@ -99,9 +99,9 @@ Internal auxiliary functions
 '''
 
 
-def stackedFieldmaps(graph):
+def stackedFieldmaps(model):
     field_maps = {}
-    layer_fieldmaps = layerFieldmaps(graph)
+    layer_fieldmaps = layerFieldmaps(model)
     for idx, layer_fieldmap in enumerate(layer_fieldmaps):
         layer, offset, size, stride = layer_fieldmap
         field_map = (offset, size, stride)
@@ -116,55 +116,26 @@ def stackedFieldmaps(graph):
             field_maps[layer] = field_map
     return field_maps
 
-def layerFieldmaps(graph):
-    ops = graph.get_operations()
-    layers = []
-    configs = {}
-    for op in ops:
-        if 'filter' in op.name and op.type == 'Const':
-            # conv/filter operation
-            layer = layerOfOp(op)
-            h, w, _, _ = op.outputs[0].shape
+def layerFieldmaps(model):
+    field_maps = []
+    for layer_config in model.config:
+        layer = layer_config[0]
+        type = layer_config[1]
+        config = layer_config[2]
+        
+        if type == 'conv' or type == 'pool':
+            if type == 'conv':
+                h, w, _, _ = config['ksize']
+            else:
+                _, h, w, _ = config['ksize']
             size = (int(h), int(w))
-            if layer not in layers:
-                layers.append(layer)
-                configs[layer] = {'size' : size}
-            elif 'size' not in configs[layer]:
-                configs[layer]['size'] = size
-        elif 'Conv2D' in op.name and op.type == 'Conv2D':
-            # conv/Conv2D operation
-            layer = layerOfOp(op)
-            # original shape of strides in Tensor: e.g. (1, 1, 1, 1)
-            # in the case of Conv2D, only index 1,2 useful
-            strides = tuple(op.get_attr('strides')[1:3])
-            padding = op.get_attr('padding')
-            padding = _negPaddingFromPadStr(padding, configs[layer]['size'], strides)
-            if layer not in layers:
-                layers.append(layer)
-                configs[layer] = {
-                    'strides' : strides,
-                    'padding' : padding
-                }
-            elif 'strides' not in configs[layer]:
-                configs[layer]['strides'] = strides
-                configs[layer]['padding'] = padding
-        elif 'pool' in op.name and 'pool' in op.type.lower():
-            # pooling layer
-            layer = layerOfOp(op)
-            layers.append(layer)
-            size = tuple(op.get_attr('ksize')[1:3])
-            strides = tuple(op.get_attr('strides')[1:3])
-            padding = op.get_attr('padding')
+            strides = tuple(config['strides'][1:3])
+            padding = config['padding']
             padding = _negPaddingFromPadStr(padding, size, strides)
-            configs[layer] = {
-                'size' : size,
-                'strides' : strides,
-                'padding' : padding
-            }
+            field_maps.append((layer, padding, size, strides))
 
-    return [(l, ) + tuple([configs[l][key] for key in ['padding', 'size', 'strides']])
-            for l in layers]
-    
+    return field_maps
+            
 def _negPaddingFromPadStr(pad_str, ksize, strides):
     # TODO - transform string padding to corresponding numbers
     pad_str = str(pad_str)
@@ -184,6 +155,3 @@ def unitOfLayer(layer, index):
 
 def layerOfUnit(unit_id):
     return unit_id.split('_')[0]
-
-def layerOfOp(op):
-    return op.name.split('/')[0]
