@@ -11,6 +11,7 @@ Batch structure:
 from easydict import EasyDict as edict
 import os, sys
 import numpy as np
+import time
 from skimage.transform import resize
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
@@ -122,6 +123,8 @@ class BatchLoader(object):
     
     def nextBatch(self, amount=None):
         self.batch_id += 1
+        print ("Batch {}: loading...".format(self.batch_id))
+        start = time.time()
         batch = edict({
             "ids" : [],
             "names" : [],
@@ -162,15 +165,20 @@ class BatchLoader(object):
                     batch.labels.append(labels)
 
         batch.imgs = np.asarray(batch.imgs)
-        self.reportProgress(len(batch.imgs))
+        self.reportProgress(len(batch.imgs), start)
         return batch
 
-    def reportProgress(self, num):
+    def reportProgress(self, num, start):
         finished = self.amount - self.size
         progress = 100 * float(finished) / self.amount
-        report = "Batch {}: load {} samples, {}/{}({:.2f}%)".format(self.batch_id,
-                                                                    num,
-                                                                    finished,
-                                                                    self.amount,
-                                                                    progress)
+        dur = time.time() - start
+        effi = dur / num
+        report = ("Batch {}: load {} samples, {}/{}({:.2f}%), taking {:.2f} sec. ({:.2f} sec. / sample)"
+                  .format(self.batch_id,
+                          num,
+                          finished,
+                          self.amount,
+                          progress,
+                          dur,
+                          effi))
         print (report)
