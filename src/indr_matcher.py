@@ -9,6 +9,7 @@ To match semantic concepts with hidden units in intermediate layers
 import os, sys
 import time
 from easydict import EasyDict as edict
+from multiprocessing import Pool
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -246,8 +247,35 @@ Main program
 '''
 
 
+def reflectAndMatch(activ_maps, field_maps, annos):
+    print ("Mapping activation maps back to input images ...")
+    ref_activ_maps = reflect(activ_maps, field_maps, annos)
+    activ_maps = None
+
+    print ("Matching activations and annotations ...")
+    batch_matches = matchActivsAnnos(ref_activ_maps, annos)
+    ref_activ_maps = None
+
+    return batch_matches
+
+
+def splitActivMaps(activ_maps, num):
+    keys = list(activ_maps.keys())
+    size = len(keys) // num
+    left = len(keys) % num
+    sizes = [size for x in range(num)]
+    for i in range(num):
+        sizes[i] += 1 if left>0 else 0
+        left -= 1
+    splited = []
+    for size in sizes:
+        sub_keys = keys[:size]
+        splited.append({key:activ_maps[key] for key in sub_keys})
+        keys = keys[size:]
+    return splited
+
 if __name__ == "__main__":
-    bl = BatchLoader(amount=10)
+    bl = BatchLoader(amount=30)
     model = ModelAgent(input_size=10)
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
@@ -256,7 +284,9 @@ if __name__ == "__main__":
         field_maps = model.getFieldmaps()
     elif CONFIG.DIS.REFLECT == "deconvnet":
         from utils.dissection.deconvnet import reflect
-    
+
+    pool = Pool()
+    num = pool._processes
     matches = None
     while bl:
         start = time.time()
@@ -267,15 +297,13 @@ if __name__ == "__main__":
 
         print ("Fetching activation maps for specific units ...")
         activ_maps = model.getActivMaps(images, probe_layers)
-        print ("Mapping activation maps back to input images ...")
-        ref_activ_maps = reflect(activ_maps, field_maps, annos)
-        activ_maps = None
-
-        print ("Matching activations and annotations ...")
-        batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-        ref_activ_maps = None
+        activ_maps = splitActivMaps(activ_maps, num)
+        params = [(amap, field_maps, annos) for amap in activ_maps]
+        batch_matches = pool.starmap(reflectAndMatch, params)
+        
         print ("Integrating matches results of a batch into final results ...")
-        matches = combineMatches(matches, batch_matches)
+        for batch_match in batch_matches:
+            matches = combineMatches(matches, batch_match)
         batch_matches = None
         
         reportProgress(start, time.time(), bl.batch_id, len(images))
