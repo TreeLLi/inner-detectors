@@ -14,6 +14,8 @@ import numpy as np
 import time
 from skimage.transform import resize
 
+from h5py import File
+
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
@@ -52,7 +54,7 @@ def fetchDataFromPASCAL(identifier):
     annos, labels = parsePASCALPartAnno(directory, file_name)
     # saveObject((annos, labels), file_path)
 
-    return img, annos, labels
+    return [img, annos, labels]
 
 
 '''
@@ -123,6 +125,12 @@ class BatchLoader(object):
         self.amount = amount if amount is not None else len(self.data)
         self.batch_id = 0
         self.sample_id = 0
+
+        self.database = File("datasets/pascal_part/pascal_part.h5")
+        group_names = ["img", "label", "anno_name", "anno_cate", "anno_mask", "anno_partof"]
+        for name in group_names:
+            if name not in self.database:
+                self.database.create_group(name)
         
     def __bool__(self):
         return self.size != 0
@@ -154,12 +162,36 @@ class BatchLoader(object):
             
             for sample in samples:
                 s_name = sample[0]
-                s_source = sample[1]
-                
-                if s_source == PASCAL:
-                    img, annos, labels = fetchDataFromPASCAL(s_name)
-                    # add operations for other sources
 
+                if s_name in self.database:
+                    img = self.database.get("img/"+s_name)
+                    labels = self.database.get("label/"+s_name)
+                    anno_names = self.database.get("anno_name/"+s_name)
+                    anno_cates = self.database.get("anno_cate/"+s_name)
+                    anno_masks = self.database.get("anno_mask/"+s_name)
+                    anno_partof = self.database.get("anno_partof/" + s_name)
+                    annos = [{
+                        "name" : anno_names[i],
+                        "category" : anno_cates[i],
+                        "mask" : anno_masks[i],
+                        "partof" : anno_partof[i]
+                    } for i in range(len(anno_names))]
+                    
+                else:
+                    s_source = sample[1]
+                    if s_source == PASCAL:
+                        img, annos, labels = fetchDataFromPASCAL(s_name)
+                    self.database.get("img").create_dataset(s_name, data=img)
+                    self.database.get("label").create_dataset(s_name, data=labels)
+                    anno_names = [np.string_(anno['name']) for anno in annos]
+                    anno_cates = [np.string_(anno['category']) for anno in annos]
+                    anno_masks = [anno['mask'] for anno in annos]
+                    anno_partof = [np.string_(anno['partof']) for anno in annos]
+                    self.database.get('anno_name').create_dataset(s_name, data=anno_names)
+                    self.database.get('anno_cate').create_dataset(s_name, data=anno_cates)
+                    self.database.get('anno_mask').create_dataset(s_name, data=anno_masks)
+                    self.database.get('anno_partof').create_dataset(s_name, data=anno_partof)
+                    
                 img = preprocessImage(img, self.target)
                 annos = preprocessAnnos(annos)
                 if len(annos) == 0:

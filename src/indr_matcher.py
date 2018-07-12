@@ -247,7 +247,7 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=10)
+    bl = BatchLoader(amount=40)
     model = ModelAgent(input_size=10)
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
@@ -265,19 +265,19 @@ if __name__ == "__main__":
         images = batch.imgs
         annos = batch.annos
 
-        print ("Fetching activation maps for specific units ...")
-        activ_maps = model.getActivMaps(images, probe_layers)
-        print ("Mapping activation maps back to input images ...")
-        ref_activ_maps = reflect(activ_maps, field_maps, annos)
-        activ_maps = None
+        # print ("Fetching activation maps for specific units ...")
+        # activ_maps = model.getActivMaps(images, probe_layers)
+        # print ("Mapping activation maps back to input images ...")
+        # ref_activ_maps = reflect(activ_maps, field_maps, annos)
+        # activ_maps = None
 
-        print ("Matching activations and annotations ...")
-        batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-        ref_activ_maps = None
-        print ("Integrating matches results of a batch into final results ...")
-        matches = combineMatches(matches, batch_matches)
-        batch_matches = None
+        # print ("Matching activations and annotations ...")
+        # batch_matches = matchActivsAnnos(ref_activ_maps, annos)
+        # ref_activ_maps = None
+        # print ("Integrating matches results of a batch into final results ...")
+        # matches = combineMatches(matches, batch_matches)
+        # batch_matches = None
         
-        reportProgress(start, time.time(), bl.batch_id, len(images))
+        # reportProgress(start, time.time(), bl.batch_id, len(images))
         
     reportMatchResults(matches)
