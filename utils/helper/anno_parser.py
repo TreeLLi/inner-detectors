@@ -73,7 +73,8 @@ def parsePASCALPartAnno(directory, file_name):
                         "mask" : part_mask,
                         "partof" : cls_name}))
         except:
-            print ("Exception: {} has no part masks for {}".format(file_id, cls_name))
+            continue
+            #print ("Exception: {} has no part masks for {}".format(file_id, cls_name))
         
     return annos, labels
     

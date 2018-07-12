@@ -56,7 +56,7 @@ def loadObject(file_path, dstru='list'):
         ftype = file_path.split('.')[-1]
         if ftype == 'pkl':
             with open(file_path, 'rb') as f:
-                obj = pickle.load(f)
+                obj = pickle.load(f, )
                 return obj
         elif ftype == 'txt' and dstru == 'list':
             return loadListFromText(file_path)
@@ -73,7 +73,7 @@ def saveObject(obj, file_path):
         ftype = file_path.split('.')[-1]
         if ftype == 'pkl':
             with open(file_path, 'wb+') as f:
-                pickle.dump(obj, f)
+                pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
         elif ftype == 'txt' and isinstance(obj, list):
             saveListAsText(obj, file_path)
     except Exception as e:

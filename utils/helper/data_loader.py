@@ -20,7 +20,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from src.config import PATH, CONFIG, isVGG16
-from utils.helper.file_manager import loadImage, loadObject
+from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
 
 
@@ -34,13 +34,23 @@ Dataset-specific loading functions
 '''
 
 def fetchDataFromPASCAL(identifier):
-    img_postfix = ".jpg"
-    anno_postfix = ".mat"
-    img_dir = PATH.DATA.PASCAL.IMGS
-    anno_dir = PATH.DATA.PASCAL.ANNOS
+    postfix = ".jpg"
+    directory = PATH.DATA.PASCAL.IMGS
+    file_name = identifier + postfix
+    img = loadImage(directory, file_name)
 
-    img = loadImage(img_dir, identifier+img_postfix)
-    annos, labels = parsePASCALPartAnno(anno_dir, identifier+anno_postfix)
+    # postfix = ".pkl"
+    # directory = PATH.DATA.PASCAL.PRS_ANNOS
+    # file_name = identifier + postfix
+    # file_path = os.path.join(directory, file_name)
+    # if os.path.isfile(file_path):
+    #     annos, labels = loadObject(file_path)
+    # else:
+    postfix = ".mat"
+    file_name = identifier + postfix
+    directory = PATH.DATA.PASCAL.ANNOS
+    annos, labels = parsePASCALPartAnno(directory, file_name)
+    # saveObject((annos, labels), file_path)
 
     return img, annos, labels
 
