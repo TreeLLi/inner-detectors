@@ -15,7 +15,7 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from utils.helper.data_loader import BatchLoader
+from utils.helper.data_loader import BatchLoader, getClassName
 from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
@@ -70,7 +70,7 @@ Match annotaions and activation maps
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
 def matchActivsAnnos(activs, annos):
-    matches = edict()
+    matches = {}
     for unit, activs in activs.items():
         unit_matches = []
         for img_idx, activ in enumerate(activs):
@@ -78,33 +78,27 @@ def matchActivsAnnos(activs, annos):
             unit_img_matches = matchActivAnnos(activ, img_annos)
             unit_matches.append(unit_img_matches)
         matches[unit] = unit_matches
-        # print ("Matched: unit {}".format(unit))
 
     return matches
 
 
 # match a single activation map with annotations from one image
 def matchActivAnnos(activ, annos):
-    matches = edict()
+    matches = {}
     for anno in annos:
-        concept = anno.name
-        category = anno.category
-        mask = anno.mask
+        concept = anno[0]
+        mask = anno[1]
 
         if concept not in matches:
-            matches[concept] = edict()
-            matches[concept].category = category
-            matches[concept].iou = iou(activ, mask)
-            matches[concept].count = 1
+            matches[concept] = [iou(activ, mask), 1]
         else:
             # multiple same concepts exist in the same image
-            iou_1 = matches[concept].iou
-            count_1 = matches[concept].count
+            iou_1 = matches[concept][0]
+            count_1 = matches[concept][1]
             iou_2 = iou(activ, mask)
-            matches[concept].iou = weightedIoU(iou_1, count_1, iou_2)
-            matches[concept].count += 1
+            matches[concept][0] = weightedIoU(iou_1, count_1, iou_2)
+            matches[concept][1] += 1
 
-        # print ("\tConcept:{:6}\tIoU:{:.2f}\tCount:{:2}".format(concept, matches[concept].iou, matches[concept].count))
     return matches
 
 
@@ -118,11 +112,11 @@ def combineMatches(matches, batch_matches):
     if batch_matches is None:
         return matches
     elif matches is None:
-        matches = edict()
+        matches = {}
         
     for unit, batch_match in batch_matches.items():
         if unit not in matches:
-            matches[unit] = edict()
+            matches[unit] = {}
 
         unit_match = matches[unit]
         for img_match in batch_match:
@@ -130,12 +124,12 @@ def combineMatches(matches, batch_matches):
                 if concept not in unit_match:
                     unit_match[concept] = cct_match
                 else:
-                    iou_1 = cct_match.iou
-                    count_1 = cct_match.count
-                    iou_2 = unit_match[concept].iou
-                    count_2 = unit_match[concept].count
-                    unit_match[concept].iou = weightedIoU(iou_1, count_1, iou_2, count_2)
-                    unit_match[concept].count += count_1
+                    iou_1 = cct_match[0]
+                    count_1 = cct_match[1]
+                    iou_2 = unit_match[concept][0]
+                    count_2 = unit_match[concept][1]
+                    unit_match[concept][0] = weightedIoU(iou_1, count_1, iou_2, count_2)
+                    unit_match[concept][1] += count_1
     return matches
 
 
@@ -161,9 +155,9 @@ def reportMatchResults(matches):
     
     if CONFIG.DIS.REPORT_TEXT:
         file_path = PATH.OUT.UNIT_MATCH_REPORT
-        reportMatchesInText(unit_matches, file_path)
+        reportMatchesInText(unit_matches, file_path, "unit")
         file_path = PATH.OUT.CONCEPT_MATCH_REPORT
-        reportMatchesInText(concept_matches, file_path)
+        reportMatchesInText(concept_matches, file_path, "concept")
     print ("Report Matches: saved")
         
     if CONFIG.DIS.REPORT_FIGURE:
@@ -176,16 +170,15 @@ def filterMatches(matches, top=3, iou_thres=0.00):
         top_n = [None for x in range(top)]
 
         for concept, cct_match in unit_matches.items():
-            idx = topIndex(top_n, cct_match.iou)
+            idx = topIndex(top_n, cct_match[0])
             if idx is not None:
-                top_n.insert(idx, (concept, cct_match.iou))
+                top_n.insert(idx, (concept, cct_match[0]))
                 top_n = top_n[:-1]
 
         retained = []
         for concept, iou in top_n:
             if iou >= iou_thres:
-                unit_match = edict(unit_matches[concept])
-                unit_match.name = concept
+                unit_match = [concept] + unit_matches[concept]
                 retained.append(unit_match)
         filtered[unit] = retained
     return filtered
@@ -195,10 +188,10 @@ def rearrangeMatches(matches, top, iou_thres):
     for unit, unit_matches in matches.items():
         for concept, cct_match in unit_matches.items():
             if concept not in arranged:
-                unit_match = edict(cct_match)
+                unit_match = list(cct_match)
                 arranged[concept] = {unit : unit_match}
             else:
-                arranged[concept][unit] = edict(cct_match)
+                arranged[concept][unit] = list(cct_match)
     return arranged
 
 def topIndex(top_n, iou):
@@ -209,21 +202,23 @@ def topIndex(top_n, iou):
             return idx
     return None
         
-def reportMatchesInText(matches, file_path):
-    model = CONFIG.DIS.MODEL
-    
+def reportMatchesInText(matches, file_path, form):    
     with open(file_path, 'w') as f:
         for unit, unit_matches in matches.items():
+            if form == "concept":
+                unit = getClassName(unit)
             unit_line = "\n{}:\n".format(unit)
             f.write(unit_line)
             for match in unit_matches:
-                match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(match.name,
-                                                                          match.iou,
-                                                                          match.count)
+                concept = match[0]
+                concept = getClassName(concept) if form=="unit" else concept
+                iou = match[1]
+                count = match[2]
+                match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(concept, iou, count)
                 f.write(match_line)
             if len(unit_matches) == 0:
                 f.write("No significant matches found.\n")
-        
+    
 def reportMatchesInFigure(matches):
     print ("placeholder")
 
@@ -247,7 +242,7 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=40)
+    bl = BatchLoader(amount=10)
     model = ModelAgent(input_size=10)
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
@@ -261,23 +256,22 @@ if __name__ == "__main__":
     while bl:
         start = time.time()
         batch = bl.nextBatch()
-        names = batch.names
-        images = batch.imgs
-        annos = batch.annos
+        images = batch[1]
+        annos = batch[2]
 
-        # print ("Fetching activation maps for specific units ...")
-        # activ_maps = model.getActivMaps(images, probe_layers)
-        # print ("Mapping activation maps back to input images ...")
-        # ref_activ_maps = reflect(activ_maps, field_maps, annos)
-        # activ_maps = None
+        print ("Fetching activation maps for specific units ...")
+        activ_maps = model.getActivMaps(images, probe_layers)
+        print ("Mapping activation maps back to input images ...")
+        ref_activ_maps = reflect(activ_maps, field_maps, annos)
+        activ_maps = None
 
-        # print ("Matching activations and annotations ...")
-        # batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-        # ref_activ_maps = None
-        # print ("Integrating matches results of a batch into final results ...")
-        # matches = combineMatches(matches, batch_matches)
-        # batch_matches = None
+        print ("Matching activations and annotations ...")
+        batch_matches = matchActivsAnnos(ref_activ_maps, annos)
+        ref_activ_maps = None
+        print ("Integrating matches results of a batch into final results ...")
+        matches = combineMatches(matches, batch_matches)
+        batch_matches = None
         
-        # reportProgress(start, time.time(), bl.batch_id, len(images))
+        reportProgress(start, time.time(), bl.batch_id, len(images))
         
     reportMatchResults(matches)

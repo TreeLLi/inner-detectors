@@ -30,31 +30,70 @@ from utils.helper.anno_parser import parsePASCALPartAnno
 PASCAL = "PASCAL"
 SOURCE = [PASCAL]
 
+
+'''
+Data Mapping
+
+'''
+
+if os.path.isfile(PATH.DATA.CLS_MAP):
+    class_map = loadObject(PATH.DATA.CLS_MAP)
+else:
+    class_map = []
+
+if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
+    img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
+else:
+    img_cls_map = []
+
+
+def getClassId(cls, mapping=class_map, indices=None):
+    try:
+        indices.append(mapping.index(cls))
+        return mapClassId(indices)
+    except:
+        if isinstance(mapping, list):
+            for idx, m in enumerate(mapping):
+                id = getClassId(cls, m, [idx])
+                if id is not None:
+                    return id
+        else:
+            return None
+
+def mapClassId(map_indices):
+    id = map_indices[0]
+    for idx, val in enumerate(map_indices[1:]):
+        id += val*1000 if idx == 0 else val*1000*(100**idx)
+    return id
+
+def getClassName(cls_id, mapping=class_map):
+    id_str = str(cls_id)
+    indices = [int(id_str[-3:])]
+    id_str = id_str[:-3]
+    indices += reversed([int(id_str[i:i+2]) for i in range(0, len(id_str), 2)])
+    for idx in indices:
+        mapping = mapping[idx]
+    return mapping[0] if isinstance(mapping, list) else mapping
+
+
 '''
 Dataset-specific loading functions
 
 '''
 
-def fetchDataFromPASCAL(identifier):
+def fetchDataFromPASCAL(img_id):
     postfix = ".jpg"
     directory = PATH.DATA.PASCAL.IMGS
-    file_name = identifier + postfix
+    file_name = img_id + postfix
     img = loadImage(directory, file_name)
 
-    # postfix = ".pkl"
-    # directory = PATH.DATA.PASCAL.PRS_ANNOS
-    # file_name = identifier + postfix
-    # file_path = os.path.join(directory, file_name)
-    # if os.path.isfile(file_path):
-    #     annos, labels = loadObject(file_path)
-    # else:
     postfix = ".mat"
-    file_name = identifier + postfix
+    file_name = img_id + postfix
     directory = PATH.DATA.PASCAL.ANNOS
-    annos, labels = parsePASCALPartAnno(directory, file_name)
-    # saveObject((annos, labels), file_path)
-
-    return [img, annos, labels]
+    mappings = [class_map, img_cls_map]
+    annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId)
+    
+    return img, annos
 
 
 '''
@@ -78,8 +117,8 @@ def preprocessImage(img, target='vgg16'):
 def preprocessAnnos(annos, mask_thresh=0.5):
     processed = {}
     for anno in annos:
-        mask = anno.mask
-        name = anno.name
+        mask = anno[1]
+        id = anno[0]
         orig_count = np.sum(mask > 0)
         mask = cropImage(mask)
         crop_count = np.sum(mask > 0)
@@ -87,12 +126,12 @@ def preprocessAnnos(annos, mask_thresh=0.5):
         if retain_ratio >= mask_thresh:
             # keep the annotations which retain at least
             # 'mask_thresh' ratio of size of masks
-            if name not in processed:
-                anno.mask = mask
-                processed[name] = anno
+            if id not in processed:
+                anno[1] = mask
+                processed[id] = anno
             else:
                 # merge duplicated annos in same images
-                p_mask = processed[name].mask
+                p_mask = processed[id][1]
                 p_mask += mask
                 p_mask[p_mask>1] = 1
     return list(processed.values())
@@ -117,7 +156,7 @@ class BatchLoader(object):
         self.batch_size = batch_size
         self.target = target
         
-        self.data = loadObject(PATH.DATA.MAPS)
+        self.data = loadObject(PATH.DATA.IMG_MAP)
         if amount is not None and len(self.data) > amount:
             # discard remaining datasets, since the specified amount is reached
             self.data = self.data[:amount]
@@ -125,15 +164,15 @@ class BatchLoader(object):
         self.amount = amount if amount is not None else len(self.data)
         self.batch_id = 0
         self.sample_id = 0
-
-        self.database = File("datasets/pascal_part/pascal_part.h5")
-        group_names = ["img", "label", "anno_name", "anno_cate", "anno_mask", "anno_partof"]
-        for name in group_names:
-            if name not in self.database:
-                self.database.create_group(name)
         
     def __bool__(self):
-        return self.size != 0
+        finished = self.size <= 0
+        if finished:
+            print ("save class_map and img_cls_map")
+            saveObject(class_map, PATH.DATA.CLS_MAP)
+            saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
+
+        return not finished
 
     @property
     def size(self):
@@ -143,13 +182,8 @@ class BatchLoader(object):
         self.batch_id += 1
         print ("Batch {}: loading...".format(self.batch_id))
         start = time.time()
-        batch = edict({
-            "ids" : [],
-            "names" : [],
-            "imgs" : [],
-            "annos" : [],
-            "labels" : []
-        })
+        # order: [ids, imgs, annos]
+        batch = [[], [], []]
         
         num = self.batch_size if amount is None else amount
         while num != 0:
@@ -162,35 +196,9 @@ class BatchLoader(object):
             
             for sample in samples:
                 s_name = sample[0]
-
-                if s_name in self.database:
-                    img = self.database.get("img/"+s_name)
-                    labels = self.database.get("label/"+s_name)
-                    anno_names = self.database.get("anno_name/"+s_name)
-                    anno_cates = self.database.get("anno_cate/"+s_name)
-                    anno_masks = self.database.get("anno_mask/"+s_name)
-                    anno_partof = self.database.get("anno_partof/" + s_name)
-                    annos = [{
-                        "name" : anno_names[i],
-                        "category" : anno_cates[i],
-                        "mask" : anno_masks[i],
-                        "partof" : anno_partof[i]
-                    } for i in range(len(anno_names))]
-                    
-                else:
-                    s_source = sample[1]
-                    if s_source == PASCAL:
-                        img, annos, labels = fetchDataFromPASCAL(s_name)
-                    self.database.get("img").create_dataset(s_name, data=img)
-                    self.database.get("label").create_dataset(s_name, data=labels)
-                    anno_names = [np.string_(anno['name']) for anno in annos]
-                    anno_cates = [np.string_(anno['category']) for anno in annos]
-                    anno_masks = [anno['mask'] for anno in annos]
-                    anno_partof = [np.string_(anno['partof']) for anno in annos]
-                    self.database.get('anno_name').create_dataset(s_name, data=anno_names)
-                    self.database.get('anno_cate').create_dataset(s_name, data=anno_cates)
-                    self.database.get('anno_mask').create_dataset(s_name, data=anno_masks)
-                    self.database.get('anno_partof').create_dataset(s_name, data=anno_partof)
+                s_source = sample[1]
+                if s_source == PASCAL:
+                    img, annos = fetchDataFromPASCAL(s_name)
                     
                 img = preprocessImage(img, self.target)
                 annos = preprocessAnnos(annos)
@@ -199,15 +207,13 @@ class BatchLoader(object):
                     # increase counter 'num' to load images in next loop
                     num += 1
                 else:
-                    batch.ids.append(self.sample_id)
+                    batch[0].append(self.sample_id)
                     self.sample_id += 1
-                    batch.names.append(s_name)
-                    batch.imgs.append(img)
-                    batch.annos.append(annos)
-                    batch.labels.append(labels)
+                    batch[1].append(img)
+                    batch[2].append(annos)
 
-        batch.imgs = np.asarray(batch.imgs)
-        self.reportProgress(len(batch.imgs), start)
+        batch[1] = np.asarray(batch[1])
+        self.reportProgress(len(batch[1]), start)
         return batch
 
     def reportProgress(self, num, start):

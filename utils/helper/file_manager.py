@@ -8,6 +8,7 @@ To manage all files' inputs and outpus
 
 import os, sys
 import pickle
+import json
 from scipy.misc import imread, imsave
 
 
@@ -76,6 +77,9 @@ def saveObject(obj, file_path):
                 pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
         elif ftype == 'txt' and isinstance(obj, list):
             saveListAsText(obj, file_path)
+        elif ftype == 'json':
+            with open(file_path, 'w') as f:
+                json.dump(obj, f)
     except Exception as e:
         print ("Error: failed to save object at {}".format(file_path))
         print ("Because {}".format(e))
