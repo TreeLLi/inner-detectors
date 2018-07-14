@@ -36,15 +36,18 @@ Data Mapping
 
 '''
 
-if os.path.isfile(PATH.DATA.CLS_MAP):
-    class_map = loadObject(PATH.DATA.CLS_MAP)
-else:
-    class_map = []
+# if os.path.isfile(PATH.DATA.CLS_MAP):
+#     class_map = loadObject(PATH.DATA.CLS_MAP)
+# else:
+#     class_map = []
 
-if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
-    img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
-else:
-    img_cls_map = []
+# if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
+#     img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
+# else:
+#     img_cls_map = []
+
+class_map = []
+img_cls_map = []
 
 
 def getClassId(cls, mapping=class_map, indices=None):

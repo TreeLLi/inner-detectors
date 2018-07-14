@@ -37,7 +37,7 @@ def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id):
     path = os.path.join(directory, file_name)
     data = sio.loadmat(path)
     data = data['anno']
-    file_id = data[0][0][0][0]
+    file_id = str(data[0][0][0][0])
     
     class_map = mappings[0]
     img_cls_map = mappings[1]
@@ -46,8 +46,8 @@ def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id):
     
     annos = []
     for cls in data[0][0][1][0]:
-        cls_name = cls[0][0]
-        cls_id = cls[1][0][0]
+        cls_name = str(cls[0][0])
+        cls_id = int(cls[1][0][0])
         cls_mask = cls[2]
     
         annos.append([cls_id, cls_mask])
@@ -63,7 +63,7 @@ def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id):
             part_masks = cls[3][0]
             part_map = class_map[cls_id]
             for part in part_masks:
-                part_name = part[0][0]
+                part_name = str(part[0][0])
                 part_mask = part[1]
 
                 if part_name not in part_map:
