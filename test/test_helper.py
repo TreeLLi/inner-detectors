@@ -37,7 +37,13 @@ class TestBase(unittest.TestCase):
         path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, img_id)
         return image
-        
+
+    def getImageFile(self):
+        return "2008_004198.jpg"
+
+    def getImageId(self):
+        return "2008_004198"
+    
     '''
     Print
 

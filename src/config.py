@@ -71,7 +71,10 @@ PATH.ROOT = _root_path
 # dataset path
 PATH.DATA = edict()
 PATH.DATA.ROOT = _data_path
-PATH.DATA.MAPS = os.path.join(_data_path, "imgs_maps.txt")
+PATH.DATA.IMG_MAP = os.path.join(_data_path, "imgs_maps.txt")
+PATH.DATA.CLS_MAP = os.path.join(_data_path, "class_maps.json")
+PATH.DATA.IMG_CLS_MAP = os.path.join(_data_path, "img_cls_maps.json")
+
 
 PATH.DATA.PASCAL = edict({
     "ROOT" : _pascal_path,
