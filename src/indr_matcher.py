@@ -7,7 +7,7 @@ To match semantic concepts with hidden units in intermediate layers
 
 
 import os, sys
-import time
+import time, datetime
 from easydict import EasyDict as edict
 from multiprocessing import Pool
 
@@ -239,12 +239,16 @@ Progress report
 
 '''
 
-def reportProgress(start, end, bid, num):
+def reportProgress(start, end, bid, num, left):
     dur = end - start
     effi = dur / num
     print ("Batch {}: finished {} samples in {:.2f} sec. ({:.2f} sec. / sample)"
            .format(bid, num, dur, effi))
-    
+    remaining_time = left * effi
+    end_time = datetime.datetime.now() + datetime.timedelta(seconds=remaining_time)
+    end_time = end_time.strftime("%X %d/%m")
+    remaining_time = remaining_time / 60
+    print ("Unfinished: {} samples, estimated finishing time is {} (after {:.2f} min)".format(left, end_time, remaining_time))
 
 '''
 Multi-processing
@@ -275,7 +279,7 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=30)
+    bl = BatchLoader(amount=20)
     model = ModelAgent(input_size=10)
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
@@ -298,6 +302,7 @@ if __name__ == "__main__":
         activ_maps = model.getActivMaps(images, probe_layers)
         activ_maps = splitActivMaps(activ_maps, num)
         params = [(amap, field_maps, annos) for amap in activ_maps]
+        print ("Reflecting and matching activation maps")
         batch_matches = pool.starmap(reflectAndMatch, params)
         
         print ("Integrating matches results of a batch into final results ...")
@@ -305,6 +310,6 @@ if __name__ == "__main__":
             matches = combineMatches(matches, batch_match)
         batch_matches = None
         
-        reportProgress(start, time.time(), bl.batch_id, len(images))
+        reportProgress(start, time.time(), bl.batch_id, len(images), bl.size)
         
     reportMatchResults(matches)
