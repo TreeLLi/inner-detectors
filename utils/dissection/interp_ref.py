@@ -19,7 +19,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from src.config import *
-from utils.model.model_agent import layerOfUnit
+from utils.model.model_agent import splitUnitID
 from utils.dissection.upsample import upsampleL, compose_fieldmap
 
 
@@ -31,7 +31,7 @@ Activation maps reflection
 def reflect(activ_maps, field_maps, annos):
     print ("Mapping activation maps back to input images ...")
     for unit_id, unit_activ_maps in activ_maps.items():
-        layer = layerOfUnit(unit_id)
+        layer, _ = splitUnitID(unit_id)
         field_map = field_maps[layer]
         # scale activation maps to model input dimensions
         input_dims_activs = upsampleL(field_map, unit_activ_maps)

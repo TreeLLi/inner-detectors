@@ -70,12 +70,8 @@ Match annotaions and activation maps
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
 def matchActivsAnnos(activs, annos):
-<<<<<<< HEAD
     print ("Matching activations and annotations ...")
-    matches = edict()
-=======
     matches = {}
->>>>>>> master
     for unit, activs in activs.items():
         unit_matches = []
         for img_idx, activ in enumerate(activs):

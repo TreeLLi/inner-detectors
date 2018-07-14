@@ -179,6 +179,9 @@ def unitOfLayer(layer, index):
 
 def splitUnitID(unit_id):
     spl = unit_id.split('_')
-    layer = "{}_{}".format(spl[0], spl[1])
-    unit = spl[2]
-    return layer, unit
+    if len(spl) == 2:
+        return spl[0], spl[1]
+    elif len(spl) == 3:
+        layer = "{}_{}".format(spl[0], spl[1])
+        unit = spl[2]
+        return layer, unit
