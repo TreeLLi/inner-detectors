@@ -38,9 +38,13 @@ class TestDataLoader(TestBase):
         
         batch = bl.nextBatch()
         self.assertNotEmpty(batch)
-        self.assertShape(batch.imgs, (10, 224, 224, 3))
+        self.assertShape(batch[1], (10, 224, 224, 3))
         
-
+    def test_fetch_data_from_pascal(self):
+        img_id = self.getImageId()
+        img, annos = fetchDataFromPASCAL(img_id)
+        
+        
     def test_preprocess_image(self):
         path = PATH.DATA.PASCAL.IMGS
         image = loadImage(path, "2008_004198.jpg")
@@ -55,15 +59,12 @@ class TestDataLoader(TestBase):
             [0,0,1,1],
             [1,1,0,0]
         ])
-        anno = edict({
-            "name" : "leg",
-            "mask" : anno
-        })
+        anno = [1, anno]
         annos = [anno]
         annos = preprocessAnnos(annos)
-        self.assertListEqual(annos[0].mask, [[0,1],[1,0]])
+        self.assertListEqual(annos[0][1], [[0,1],[1,0]])
 
-        annos[0].mask = np.asarray([
+        annos[0][1] = np.asarray([
             [0,0,1,1,1,1,1,1,1,1],
             [1,1,0,0,1,1,1,1,1,1]
         ])
@@ -71,12 +72,24 @@ class TestDataLoader(TestBase):
         self.assertEmpty(annos)
 
         anno = np.asarray([[0,0],[1,1]])
-        annos.append(edict({
-            "name" : "leg",
-            "mask" : anno
-        }))
+        annos.append([1, anno])
         annos = preprocessAnnos(annos, 0)
         self.assertLength(annos, 1)
+
+    def test_get_class_id(self):
+        mapping = [None, ["person", "leg"]]
+        cls = "leg"
+        id = getClassId(cls, mapping)
+        self.assertEqual(id, 1001)
+
+    def test_get_class_name(self):
+        mapping = [None, None, None, ["leg", "fuck"]]
+        cls = "leg"
+        id = getClassId(cls, mapping)
+        print (id)
+        mapped = getClassName(id, mapping)
+        self.assertEqual(cls, mapped)
+        
         
 class TestFileManager(TestBase):
 
@@ -114,16 +127,10 @@ class TestAnnoParser(TestBase):
     def test_parse_pascal_anno(self):
         directory = PATH.DATA.PASCAL.ANNOS
         file_name = "2008_004198.mat"
+
+        mappings = [[], []]
         
-        annos, labels = parsePASCALPartAnno(directory, file_name)
-        self.assertTrue(len(annos) == 13)
-        self.assertTrue(len(labels) == 1)
-        self.assertTrue(annos[1].name == "head")
-        self.assertTrue(annos[0].category == "object")
-        self.assertTrue(annos[2].partof == annos[0].name)
-
-        self.assertTrue(labels[0] == 15)
-
-
+        annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId)
+        
 if __name__ == "__main__":
     unittest.main()

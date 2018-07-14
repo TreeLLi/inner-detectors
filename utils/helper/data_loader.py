@@ -11,7 +11,10 @@ Batch structure:
 from easydict import EasyDict as edict
 import os, sys
 import numpy as np
+import time
 from skimage.transform import resize
+
+from h5py import File
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
@@ -19,7 +22,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from src.config import PATH, CONFIG, isVGG16
-from utils.helper.file_manager import loadImage, loadObject
+from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
 
 
@@ -27,21 +30,73 @@ from utils.helper.anno_parser import parsePASCALPartAnno
 PASCAL = "PASCAL"
 SOURCE = [PASCAL]
 
+
+'''
+Data Mapping
+
+'''
+
+# if os.path.isfile(PATH.DATA.CLS_MAP):
+#     class_map = loadObject(PATH.DATA.CLS_MAP)
+# else:
+#     class_map = []
+
+# if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
+#     img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
+# else:
+#     img_cls_map = []
+
+class_map = []
+img_cls_map = []
+
+
+def getClassId(cls, mapping=class_map, indices=None):
+    try:
+        indices.append(mapping.index(cls))
+        return mapClassId(indices)
+    except:
+        if isinstance(mapping, list):
+            for idx, m in enumerate(mapping):
+                id = getClassId(cls, m, [idx])
+                if id is not None:
+                    return id
+        else:
+            return None
+
+def mapClassId(map_indices):
+    id = map_indices[0]
+    for idx, val in enumerate(map_indices[1:]):
+        id += val*1000 if idx == 0 else val*1000*(100**idx)
+    return id
+
+def getClassName(cls_id, mapping=class_map):
+    id_str = str(cls_id)
+    indices = [int(id_str[-3:])]
+    id_str = id_str[:-3]
+    indices += reversed([int(id_str[i:i+2]) for i in range(0, len(id_str), 2)])
+    for idx in indices:
+        mapping = mapping[idx]
+    return mapping[0] if isinstance(mapping, list) else mapping
+
+
 '''
 Dataset-specific loading functions
 
 '''
 
-def fetchDataFromPASCAL(identifier):
-    img_postfix = ".jpg"
-    anno_postfix = ".mat"
-    img_dir = PATH.DATA.PASCAL.IMGS
-    anno_dir = PATH.DATA.PASCAL.ANNOS
+def fetchDataFromPASCAL(img_id):
+    postfix = ".jpg"
+    directory = PATH.DATA.PASCAL.IMGS
+    file_name = img_id + postfix
+    img = loadImage(directory, file_name)
 
-    img = loadImage(img_dir, identifier+img_postfix)
-    annos, labels = parsePASCALPartAnno(anno_dir, identifier+anno_postfix)
-
-    return img, annos, labels
+    postfix = ".mat"
+    file_name = img_id + postfix
+    directory = PATH.DATA.PASCAL.ANNOS
+    mappings = [class_map, img_cls_map]
+    annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId)
+    
+    return img, annos
 
 
 '''
@@ -65,8 +120,8 @@ def preprocessImage(img, target='vgg16'):
 def preprocessAnnos(annos, mask_thresh=0.5):
     processed = {}
     for anno in annos:
-        mask = anno.mask
-        name = anno.name
+        mask = anno[1]
+        id = anno[0]
         orig_count = np.sum(mask > 0)
         mask = cropImage(mask)
         crop_count = np.sum(mask > 0)
@@ -74,12 +129,12 @@ def preprocessAnnos(annos, mask_thresh=0.5):
         if retain_ratio >= mask_thresh:
             # keep the annotations which retain at least
             # 'mask_thresh' ratio of size of masks
-            if name not in processed:
-                anno.mask = mask
-                processed[name] = anno
+            if id not in processed:
+                anno[1] = mask
+                processed[id] = anno
             else:
                 # merge duplicated annos in same images
-                p_mask = processed[name].mask
+                p_mask = processed[id][1]
                 p_mask += mask
                 p_mask[p_mask>1] = 1
     return list(processed.values())
@@ -104,7 +159,7 @@ class BatchLoader(object):
         self.batch_size = batch_size
         self.target = target
         
-        self.data = loadObject(PATH.DATA.MAPS)
+        self.data = loadObject(PATH.DATA.IMG_MAP)
         if amount is not None and len(self.data) > amount:
             # discard remaining datasets, since the specified amount is reached
             self.data = self.data[:amount]
@@ -114,7 +169,13 @@ class BatchLoader(object):
         self.sample_id = 0
         
     def __bool__(self):
-        return self.size != 0
+        finished = self.size <= 0
+        if finished:
+            print ("save class_map and img_cls_map")
+            saveObject(class_map, PATH.DATA.CLS_MAP)
+            saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
+
+        return not finished
 
     @property
     def size(self):
@@ -122,13 +183,10 @@ class BatchLoader(object):
     
     def nextBatch(self, amount=None):
         self.batch_id += 1
-        batch = edict({
-            "ids" : [],
-            "names" : [],
-            "imgs" : [],
-            "annos" : [],
-            "labels" : []
-        })
+        print ("Batch {}: loading...".format(self.batch_id))
+        start = time.time()
+        # order: [ids, imgs, annos]
+        batch = [[], [], []]
         
         num = self.batch_size if amount is None else amount
         while num != 0:
@@ -142,11 +200,9 @@ class BatchLoader(object):
             for sample in samples:
                 s_name = sample[0]
                 s_source = sample[1]
-                
                 if s_source == PASCAL:
-                    img, annos, labels = fetchDataFromPASCAL(s_name)
-                    # add operations for other sources
-
+                    img, annos = fetchDataFromPASCAL(s_name)
+                    
                 img = preprocessImage(img, self.target)
                 annos = preprocessAnnos(annos)
                 if len(annos) == 0:
@@ -154,23 +210,26 @@ class BatchLoader(object):
                     # increase counter 'num' to load images in next loop
                     num += 1
                 else:
-                    batch.ids.append(self.sample_id)
+                    batch[0].append(self.sample_id)
                     self.sample_id += 1
-                    batch.names.append(s_name)
-                    batch.imgs.append(img)
-                    batch.annos.append(annos)
-                    batch.labels.append(labels)
+                    batch[1].append(img)
+                    batch[2].append(annos)
 
-        batch.imgs = np.asarray(batch.imgs)
-        self.reportProgress(len(batch.imgs))
+        batch[1] = np.asarray(batch[1])
+        self.reportProgress(len(batch[1]), start)
         return batch
 
-    def reportProgress(self, num):
+    def reportProgress(self, num, start):
         finished = self.amount - self.size
         progress = 100 * float(finished) / self.amount
-        report = "Batch {}: load {} samples, {}/{}({:.2f}%)".format(self.batch_id,
-                                                                    num,
-                                                                    finished,
-                                                                    self.amount,
-                                                                    progress)
+        dur = time.time() - start
+        effi = dur / num
+        report = ("Batch {}: load {} samples, {}/{}({:.2f}%), taking {:.2f} sec. ({:.2f} sec. / sample)"
+                  .format(self.batch_id,
+                          num,
+                          finished,
+                          self.amount,
+                          progress,
+                          dur,
+                          effi))
         print (report)

@@ -37,7 +37,7 @@ def reflect(activ_maps, field_maps, annos):
         input_dims_activs = upsampleL(field_map, unit_activ_maps)
         input_dims_activs = normalise(input_dims_activs)
         # scale activation maps to annotation dimensions
-        anno_dims_activs = [resize(activ, annos[i][0].mask.shape)
+        anno_dims_activs = [resize(activ, annos[i][0][1].shape)
                            for i, activ in enumerate(input_dims_activs)]
         activ_maps[unit_id] = anno_dims_activs
     return activ_maps

@@ -42,7 +42,7 @@ def mapDatasets(sources):
             _maps = sorted(_maps, key=itemgetter(0))
         maps += _maps
     maps = [x + (idx,) for idx, x in enumerate(maps)]
-    saveObject(maps, PATH.DATA.MAPS)
+    saveObject(maps, PATH.DATA.O,IMG_MAP)
 
 def loadPASCALDataList(source_id):
     directory = PATH.DATA.PASCAL.ANNOS
