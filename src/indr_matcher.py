@@ -68,6 +68,16 @@ Match annotaions and activation maps
 
 '''
 
+
+def reflectAndMatch(activ_maps, field_maps, annos):
+    ref_activ_maps = reflect(activ_maps, field_maps, annos)
+    activ_maps = None
+
+    batch_matches = matchActivsAnnos(ref_activ_maps, annos)
+    ref_activ_maps = None
+
+    return batch_matches
+
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
 def matchActivsAnnos(activs, annos):
@@ -237,21 +247,9 @@ def reportProgress(start, end, bid, num):
     
 
 '''
-Main program
+Multi-processing
 
 '''
-
-
-def reflectAndMatch(activ_maps, field_maps, annos):
-    print ("Mapping activation maps back to input images ...")
-    ref_activ_maps = reflect(activ_maps, field_maps, annos)
-    activ_maps = None
-
-    print ("Matching activations and annotations ...")
-    batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-    ref_activ_maps = None
-
-    return batch_matches
 
 
 def splitActivMaps(activ_maps, num):
@@ -268,6 +266,13 @@ def splitActivMaps(activ_maps, num):
         splited.append({key:activ_maps[key] for key in sub_keys})
         keys = keys[size:]
     return splited
+
+    
+'''
+Main program
+
+'''
+
 
 if __name__ == "__main__":
     bl = BatchLoader(amount=30)
