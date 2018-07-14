@@ -9,6 +9,7 @@ To match semantic concepts with hidden units in intermediate layers
 import os, sys
 import time
 from easydict import EasyDict as edict
+from multiprocessing import Pool
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -66,6 +67,16 @@ def saveRefActivMaps(ref_activ_maps, names):
 Match annotaions and activation maps
 
 '''
+
+
+def reflectAndMatch(activ_maps, field_maps, annos):
+    ref_activ_maps = reflect(activ_maps, field_maps, annos)
+    activ_maps = None
+
+    batch_matches = matchActivsAnnos(ref_activ_maps, annos)
+    ref_activ_maps = None
+
+    return batch_matches
 
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
@@ -238,6 +249,28 @@ def reportProgress(start, end, bid, num):
     
 
 '''
+Multi-processing
+
+'''
+
+
+def splitActivMaps(activ_maps, num):
+    keys = list(activ_maps.keys())
+    size = len(keys) // num
+    left = len(keys) % num
+    sizes = [size for x in range(num)]
+    for i in range(num):
+        sizes[i] += 1 if left>0 else 0
+        left -= 1
+    splited = []
+    for size in sizes:
+        sub_keys = keys[:size]
+        splited.append({key:activ_maps[key] for key in sub_keys})
+        keys = keys[size:]
+    return splited
+
+    
+'''
 Main program
 
 '''
@@ -251,12 +284,13 @@ if __name__ == "__main__":
     if reflect_mode == "interpolation":
         from utils.dissection.interp_ref import reflect
         model = ModelAgent()
-        field_maps = model.getFieldmaps()
-        
+        field_maps = model.getFieldmaps()    
     elif reflect_mode == "deconvnet":
         from utils.dissection.deconvnet import reflect
         model = ModelAgent(deconv=True)
-    
+
+    pool = Pool()
+    num = pool._processes
     matches = None
     while bl:
         start = time.time()
@@ -264,17 +298,18 @@ if __name__ == "__main__":
         images = batch[1]
         annos = batch[2]
 
+        print ("Fetching activation maps for specific units ...")
         if reflect_mode == "interpolation":
             activ_maps = model.getActivMaps(images, probe_layers)
-            ref_activ_maps = reflect(activ_maps, field_maps, annos)
         elif reflect_mode == "deconvnet":
             activ_maps, switches = model.getActivMaps(images, probe_layers)
-            ref_activ_maps = reflect(activ_maps, switches)
-        activ_maps = None
+        activ_maps = splitActivMaps(activ_maps, num)
+        params = [(amap, field_maps, annos) for amap in activ_maps]
+        batch_matches = pool.starmap(reflectAndMatch, params)
         
-        batch_matches = matchActivsAnnos(ref_activ_maps, annos)
-        ref_activ_maps = None
-        matches = combineMatches(matches, batch_matches)
+        print ("Integrating matches results of a batch into final results ...")
+        for batch_match in batch_matches:
+            matches = combineMatches(matches, batch_match)
         batch_matches = None
         
         reportProgress(start, time.time(), bl.batch_id, len(images))

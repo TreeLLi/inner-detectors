@@ -166,6 +166,23 @@ class TestMatcher(TestBase):
         
         filterMatches(matches, top=2, iou_thres=0.0)
         reportMatchesInText(matches)
+
+    def test_split_activ_maps(self):
+        activ_maps = {
+            1 : 1,
+            2 : 2,
+            3 : 3,
+            4 : 4
+        }
+
+        splited = splitActivMaps(activ_maps, 4)
+        self.assertLength(splited, 4)
+        self.assertLength(splited[-1], 1)
+
+        splited = splitActivMaps(activ_maps, 3)
+        self.assertLength(splited, 3)
+        amount = sum([len(x) for x in splited])
+        self.assertEqual(amount, 4)
         
 if __name__ == "__main__":
     unittest.main()
