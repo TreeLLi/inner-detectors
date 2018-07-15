@@ -2,10 +2,10 @@
 broden1_227
 pascal_part
 datasets/imgs_maps.txt
+datasets/*.json
 
 # models
-pre-models/*.ckpt
-pre-models/*.npy
+pre-models
 
 # output
 output/
