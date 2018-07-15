@@ -18,6 +18,7 @@ if root_path not in sys.path:
 
 from utils.model.vgg16 import Vgg16
 from utils.model.model_agent import *
+from utils.model.deconvnet import *
 from utils.helper.data_loader import BatchLoader
 from utils.dissection.upsample import upsampled_shape
 from test_helper import TestBase
@@ -39,7 +40,7 @@ class TestVGG16(TestBase):
         self.log()
         bl = BatchLoader(amount=10)
         batch = bl.nextBatch()
-        imgs = batch.imgs
+        imgs = batch[1]
 
         input = tf.placeholder("float", imgs.shape)
         feed_dict = {input : imgs}
@@ -66,19 +67,20 @@ class TestModelAgent(TestBase):
         self.log()
         bl = BatchLoader(amount=1)
         batch = bl.nextBatch()
-        imgs = batch.imgs
+        imgs = batch[1]
         activ_maps = agent.getActivMaps(imgs, ['pool5'])
 
         self.assertLength(activ_maps, 512)
-        self.assertEqual(activ_maps.pool5_1.shape, (1, 7, 7))
-        self.assertEqual(activ_maps.pool5_2.shape, (1, 7, 7))
+        self.assertEqual(activ_maps['pool5_1'].shape, (1, 7, 7))
+        self.assertEqual(activ_maps['pool5_2'].shape, (1, 7, 7))
 
         agent_2 = ModelAgent(input_size=1, deconv=True)
         activ_maps, switches = agent_2.getActivMaps(imgs, ['pool5'])
 
         self.assertLength(activ_maps, 512)
-        self.assertEqual(activ_maps.pool5_1.shape, (1, 7, 7))
+        self.assertEqual(activ_maps['pool5_1'].shape, (1, 7, 7))
         self.assertLength(switches, 5)
+        print (switches['pool5'].shape)
 
     # def test_layer_unit(self):
     #     self.log()
@@ -123,7 +125,33 @@ class TestModelAgent(TestBase):
         field_map = field_maps['pool5']
         input_size = upsampled_shape(field_map, out_size)
         self.assertEqual(input_size, (224, 224))
+
         
+        
+agent = ModelAgent(input_size=10, deconv=True)
+demodel = agent.demodel
+
+class TestDeConvNet(TestBase):
+    def test_unpool_layer(self):
+        self.log()
+        bottom = tf.placeholder(tf.float32, shape=(10, 7, 7, 512))
+        name = 'pool5'
+        switch = demodel.max_pool_switches[name]
+        unpool = demodel.unpoolLayer(bottom, name, switch)
+        self.assertIsNotNone(unpool)
+        self.assertEqual(unpool.shape.as_list(), [10, 14, 14, 512])
+        
+    def test_transpose_conv_layer(self):
+        self.log()
+        bottom = tf.placeholder(tf.float32, shape=(10, 14, 14, 512))
+        name = "conv5_3"
+        ksize = [3, 3, 512, 512]
+        layer = demodel.transposeConvLayer(bottom, name, ksize)
+        self.assertIsNotNone(layer)
+        self.assertEqual(layer.shape.as_list(), [10, 14, 14, 512])
+
+    def test_build(self):
+        demodel.build()
         
 if __name__ == "__main__":
     unittest.main()

@@ -16,6 +16,7 @@ if root_path not in sys.path:
     sys.path.append(root_path)
 
 from utils.model.vgg16 import Vgg16
+from utils.model.deconvnet import DeConvNet
 from utils.helper.file_manager import loadListFromText, loadObject, saveObject
 from utils.dissection.upsample import compose_fieldmap, upsampleL
 from src.config import *
@@ -42,6 +43,9 @@ class ModelAgent:
             self.model = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=deconv)
             self.input_pholder = tf.placeholder("float", self.input_dim)
             self.model.build(self.input_pholder)
+
+        if self.deconv:
+            self.demodel = DeConvNet(self.model, PATH.MODEL.PARAM)
 
     def getFieldmaps(self, file_path=None):
         if self.field_maps is not None:
@@ -92,20 +96,24 @@ class ModelAgent:
             return activ_maps, results['switches']
 
     def getDeconvMaps(self, activ_maps, switches):
-        feed_dict = {self.model.getSwitchTensor(layer) : switch
+        feed_dict = {self.demodel.getSwitchTensor(layer) : switch
                      for layer, switch in switches.items()}
         
         for unit_id, activ_map in activ_maps.items():
             layer, unit = splitUnitID(unit_id)
             config = self.model.getConfig(layer)
             ksize = config.ksize
-            activ_map = makeUpFullActivMap(activ_map, ksize)
+            activ_map = makeUpFullActivMap(activ_map, unit, ksize)
 
-            up_layer = self.model.getUpLayer(layer)
-            up_layer_tensor = self.model.getLayerTensor(up_layer)
-            feed_dict[up_layer_tensor] = activ_map
+            input_tensor = self.demodel.getInputTensor(layer)
+            feed_dict[input_tensor] = activ_map
 
-            
+            output_tensor = self.demodel.output
+            with tf.Session() as sess:
+                activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
+
+        return activ_maps
+                
 
 '''
 Fieldmaps Helpers
