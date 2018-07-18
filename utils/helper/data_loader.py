@@ -36,18 +36,15 @@ Data Mapping
 
 '''
 
-# if os.path.isfile(PATH.DATA.CLS_MAP):
-#     class_map = loadObject(PATH.DATA.CLS_MAP)
-# else:
-#     class_map = []
+if os.path.isfile(PATH.DATA.CLS_MAP):
+    class_map = loadObject(PATH.DATA.CLS_MAP)
+else:
+    class_map = []
 
-# if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
-#     img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
-# else:
-#     img_cls_map = []
-
-class_map = []
-img_cls_map = []
+if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
+    img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
+else:
+    img_cls_map = []
 
 
 def getClassId(cls, mapping=class_map, indices=None):
@@ -78,6 +75,69 @@ def getClassName(cls_id, mapping=class_map):
         mapping = mapping[idx]
     return mapping[0] if isinstance(mapping, list) else mapping
 
+def sortAsClass(mapping):
+    sorted = []
+    for cls in class_map:
+        if not cls:
+            continue
+        
+        if isinstance(cls, list):
+           for sub_cls in cls:
+               cls_id = getClassId(sub_cls)
+               if cls_id in mapping:
+                   sorted.append([sub_cls] + mapping[cls_id])
+        else:
+            cls_id = getClassId(cls)
+            if cls_id in mapping:
+                sorted.append([cls] + mapping[cls_id])
+    return sorted
+
+
+'''
+Data Description
+
+'''
+
+if CONFIG.DATA.STATISTICS:
+    if not os.path.exists(PATH.DATA.STATISTICS):
+        des = {}
+        DESCRIBE_DATA = True
+    else:
+        print ("Data statistics have already existed at {}"
+               .format(PATH.DATA.STATISTICS))
+        DESCRIBE_DATA = False
+else:
+    DESCRIBE_DATA = False
+
+    
+def describeData(annos):
+    for anno in annos:
+        cls_id, cls_mask = anno
+        if cls_id in des:
+            cls_des = des[cls_id]
+        else:
+            cls_des = [0 for x in range(8)]
+            des[cls_id] = cls_des
+        updateClassDes(cls_des, cls_mask)
+    return des
+
+def updateClassDes(cls_des, mask):
+    row_num = np.asarray([np.sum(row>0) for row in mask])
+    row_num = row_num[row_num>0]
+    col_num = np.asarray([np.sum(mask[:, i]>0) for i in range(mask.shape[1])])
+    col_num = col_num[col_num>0]
+    c_1 = cls_des[0]
+
+    ops = [min, max, np.mean]
+    vals = [op(num) for num in [row_num, col_num] for op in ops]
+    for idx, val in enumerate(cls_des[1:-1]):
+        cls_des[idx+1] = weightedVal(val, c_1, vals[idx])
+    cls_des[-1] = weightedVal(cls_des[-1], c_1, np.sum(mask>0))
+    cls_des[0] += 1
+
+def weightedVal(v_1, c_1, v_2, c_2=1):
+    return (v_1*c_1 + v_2*c_2) / (c_1 + c_2)
+    
 
 '''
 Dataset-specific loading functions
@@ -171,9 +231,7 @@ class BatchLoader(object):
     def __bool__(self):
         finished = self.size <= 0
         if finished:
-            print ("save class_map and img_cls_map")
-            saveObject(class_map, PATH.DATA.CLS_MAP)
-            saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
+            self.finish()
 
         return not finished
 
@@ -215,6 +273,9 @@ class BatchLoader(object):
                     batch[1].append(img)
                     batch[2].append(annos)
 
+                    if DESCRIBE_DATA:
+                        describeData(annos)
+
         batch[1] = np.asarray(batch[1])
         self.reportProgress(len(batch[1]), start)
         return batch
@@ -233,3 +294,10 @@ class BatchLoader(object):
                           dur,
                           effi))
         print (report)
+
+    def finish(self):
+        print ("save class_map and img_cls_map")
+        saveObject(class_map, PATH.DATA.CLS_MAP)
+        saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
+        if DESCRIBE_DATA:
+            saveObject(sortAsClass(des), PATH.DATA.STATISTICS)

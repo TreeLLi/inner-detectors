@@ -89,7 +89,25 @@ class TestDataLoader(TestBase):
         print (id)
         mapped = getClassName(id, mapping)
         self.assertEqual(cls, mapped)
-        
+
+    def test_des_data(self):
+        annos = np.asarray([[0,1], [1,0]])
+        annos = [[1, annos], [1, annos], [2, annos]]
+        annos[1][1] = np.asarray([
+            [0, 0, 1, 1],
+            [1, 1, 1, 0],
+            [2, 3, 1, 1],
+            [0, 0, 0, 0]
+        ])
+        des = describeData(annos)
+        self.assertLength(des, 2)
+        self.assertEqual(des[2], [1, 1, 1, 1, 1, 1, 1, 2])
+        self.assertEqual(des[1], [2, 1.5, 2.5, 2, 1.5, 2, 1.625, 5.5])
+
+    def test_finish(self):
+        bl = BatchLoader(amount=10)
+        batch = bl.nextBatch()
+        bl.finish()
         
 class TestFileManager(TestBase):
 
