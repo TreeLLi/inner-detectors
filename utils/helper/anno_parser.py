@@ -33,16 +33,17 @@ def extendListToLength(lis, leng):
 Parse
 '''
 
-def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id):
+def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id, update=False):
     path = os.path.join(directory, file_name)
     data = sio.loadmat(path)
     data = data['anno']
     file_id = str(data[0][0][0][0])
     
     class_map = mappings[0]
-    img_cls_map = mappings[1]
-    img_cls_map.append([file_id])
-    _img_cls_map = img_cls_map[-1]
+    if update:
+        img_cls_map = mappings[1]
+        img_cls_map.append([file_id])
+        _img_cls_map = img_cls_map[-1]
     
     annos = []
     for cls in data[0][0][1][0]:
@@ -52,10 +53,11 @@ def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id):
     
         annos.append([cls_id, cls_mask])
 
-        extendListToLength(class_map, cls_id+1)
-        _img_cls_map.append(cls_id)
-        if class_map[cls_id] is None:
-            class_map[cls_id] = [cls_name]
+        if update:
+            extendListToLength(class_map, cls_id+1)
+            _img_cls_map.append(cls_id)
+            if class_map[cls_id] is None:
+                class_map[cls_id] = [cls_name]
         
         try:
             # access the list of part masks

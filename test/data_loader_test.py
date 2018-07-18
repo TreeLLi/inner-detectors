@@ -99,7 +99,7 @@ class TestDataLoader(TestBase):
             [2, 3, 1, 1],
             [0, 0, 0, 0]
         ])
-        des = describeData(annos)
+        des = describeData(annos, {})
         self.assertLength(des, 2)
         self.assertEqual(des[2], [1, 1, 1, 1, 1, 1, 1, 2])
         self.assertEqual(des[1], [2, 1.5, 2.5, 2, 1.5, 2, 1.625, 5.5])

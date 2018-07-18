@@ -36,15 +36,18 @@ Data Mapping
 
 '''
 
-if os.path.isfile(PATH.DATA.CLS_MAP):
+UPDATE_MAPS = False
+if os.path.exists(PATH.DATA.CLS_MAP):
     class_map = loadObject(PATH.DATA.CLS_MAP)
 else:
     class_map = []
+    UPDATE_MAPS = True
 
-if os.path.isfile(PATH.DATA.IMG_CLS_MAP):
+if os.path.exists(PATH.DATA.IMG_CLS_MAP):
     img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
 else:
     img_cls_map = []
+    UPDATE_MAPS = True
 
 
 def getClassId(cls, mapping=class_map, indices=None):
@@ -110,7 +113,7 @@ else:
     DESCRIBE_DATA = False
 
     
-def describeData(annos):
+def describeData(annos, des):
     for anno in annos:
         cls_id, cls_mask = anno
         if cls_id in des:
@@ -154,7 +157,7 @@ def fetchDataFromPASCAL(img_id):
     file_name = img_id + postfix
     directory = PATH.DATA.PASCAL.ANNOS
     mappings = [class_map, img_cls_map]
-    annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId)
+    annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId, UPDATE_MAPS)
     
     return img, annos
 
@@ -274,7 +277,7 @@ class BatchLoader(object):
                     batch[2].append(annos)
 
                     if DESCRIBE_DATA:
-                        describeData(annos)
+                        describeData(annos, des)
 
         batch[1] = np.asarray(batch[1])
         self.reportProgress(len(batch[1]), start)
