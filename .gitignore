@@ -1,8 +1,7 @@
 # datasets
 broden1_227
 pascal_part
-datasets/imgs_maps.txt
-datasets/*.json
+datasets/*.txt
 
 # models
 pre-models

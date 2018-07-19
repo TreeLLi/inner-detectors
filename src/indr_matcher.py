@@ -156,7 +156,7 @@ def reportMatchResults(matches):
     iou_thres = CONFIG.DIS.IOU_THRESHOLD
     top = CONFIG.DIS.TOP
     unit_matches = filterMatches(matches, top, iou_thres)
-    concept_matches = rearrangeMatches(matches, top, iou_thres)
+    concept_matches = rearrangeMatches(matches)
     concept_matches = filterMatches(concept_matches, top, iou_thres)
     print ("Report Matches: filtering finished.")
 
@@ -196,7 +196,7 @@ def filterMatches(matches, top=3, iou_thres=0.00):
         filtered[unit] = retained
     return filtered
 
-def rearrangeMatches(matches, top, iou_thres):
+def rearrangeMatches(matches):
     arranged = {}
     for unit, unit_matches in matches.items():
         for concept, cct_match in unit_matches.items():
@@ -215,16 +215,19 @@ def topIndex(top_n, iou):
             return idx
     return None
         
-def reportMatchesInText(matches, file_path, form):    
-    with open(file_path, 'w') as f:
-        for unit, unit_matches in matches.items():
+def reportMatchesInText(matches, file_path, form):
+    with open(file_path, 'w+') as f:
+        keys = list(matches.keys())
+        keys.sort()
+        for unit in keys:
+            unit_matches = matches[unit]
             if form == "concept":
-                unit = getClassName(unit)
+                unit = getClassName(unit, full=True)
             unit_line = "\n{}:\n".format(unit)
             f.write(unit_line)
             for match in unit_matches:
                 concept = match[0]
-                concept = getClassName(concept) if form=="unit" else concept
+                concept = getClassName(concept, full=True) if form=="unit" else concept
                 iou = match[1]
                 count = match[2]
                 match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(concept, iou, count)
@@ -241,6 +244,7 @@ Progress report
 
 '''
 
+
 def reportProgress(start, end, bid, num, left):
     dur = end - start
     effi = dur / num
@@ -252,6 +256,7 @@ def reportProgress(start, end, bid, num, left):
     remaining_time = remaining_time / 60
     print ("Unfinished: {} samples, estimated finishing time is {} (after {:.2f} min)".format(left, end_time, remaining_time))
 
+    
 '''
 Multi-processing
 

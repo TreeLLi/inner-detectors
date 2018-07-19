@@ -81,7 +81,7 @@ def saveObject(obj, file_path):
         elif ftype == 'txt' and isinstance(obj, list):
             saveListAsText(obj, file_path)
         elif ftype == 'json':
-            with open(file_path, 'w') as f:
+            with open(file_path, 'w+') as f:
                 json.dump(obj, f)
     except Exception as e:
         print ("Error: failed to save object at {}".format(file_path))
@@ -97,26 +97,28 @@ def loadListFromText(file_path):
     try:
         with open(file_path, 'r') as f:
             lines = f.readlines()
-            lines = [line.rstrip('\n') for line in lines]
+            lines = [line.rstrip("\n\t") for line in lines]
             lines = [line.split(',') for line in lines]
             lines = [line[0] if len(line)==1 else line for line in lines]
             return lines
-    except:
+    except Exception as e:
         print ("Error: failed to load text file {}".format(file_path))
-        return None
+        print ("Because {}".format(e))
 
 def saveListAsText(obj, file_path):
     try:
         with open(file_path, 'w+') as f:
             for e in obj:
                 if isinstance(e, list) or isinstance(e, tuple):
-                    line = ''.join([str(x) if x is e[-1] else str(x)+','
+                    e = ["{:.2f}".format(x) if isinstance(x, float) else str(x)
+                         for x in e]
+                    line = ''.join([x if x is e[-1] else x+',\t'
                                     for x in e])
                 else:
                     line = str(e)
                 line += '\n'
                 f.write(line)
-    except:
+    except Exception as e:
         print ("Error: failed to save list at {}".format(file_path))
-
+        print ("Because {}".format(e))
     

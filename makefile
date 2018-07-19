@@ -24,5 +24,9 @@ testmodel:
 
 testplotter:
 	python -W ignore 'test/plotter_test.py' $(m)
-clean:
+
+cleancache:
 	rm -fr */__pycache__ */*/__pycache__
+
+cleanmaps:
+	rm -f datasets/class_maps.txt datasets/img_cls_maps.txt datasets/annos_statistics.txt

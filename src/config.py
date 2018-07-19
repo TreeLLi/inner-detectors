@@ -27,6 +27,8 @@ CONFIG = edict()
 # datasets
 CONFIG.DATA = edict()
 CONFIG.DATA.SOURCES = ['PASCAL']
+# true, generate descriptive statistics report for datasets
+CONFIG.DATA.STATISTICS = True
 
 # dissection
 CONFIG.DIS = edict()
@@ -72,9 +74,9 @@ PATH.ROOT = _root_path
 PATH.DATA = edict()
 PATH.DATA.ROOT = _data_path
 PATH.DATA.IMG_MAP = os.path.join(_data_path, "imgs_maps.txt")
-PATH.DATA.CLS_MAP = os.path.join(_data_path, "class_maps.json")
-PATH.DATA.IMG_CLS_MAP = os.path.join(_data_path, "img_cls_maps.json")
-
+PATH.DATA.CLS_MAP = os.path.join(_data_path, "class_maps.txt")
+PATH.DATA.IMG_CLS_MAP = os.path.join(_data_path, "img_cls_maps.txt")
+PATH.DATA.STATISTICS = os.path.join(_data_path, "annos_statistics.txt")
 
 PATH.DATA.PASCAL = edict({
     "ROOT" : _pascal_path,
