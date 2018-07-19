@@ -83,13 +83,16 @@ class TestDataLoader(TestBase):
         self.assertEqual(id, 1001)
 
     def test_get_class_name(self):
-        mapping = [None, None, None, ["leg", "fuck"]]
-        cls = "leg"
+        mapping = [None, None, None, ["person", ["head", "eye"]]]
+        cls = "eye"
         id = getClassId(cls, mapping)
         print (id)
         mapped = getClassName(id, mapping)
         self.assertEqual(cls, mapped)
 
+        name = getClassName(id, mapping, True)
+        self.assertEqual(name, "person/head/eye")
+        
     def test_des_data(self):
         annos = np.asarray([[0,1], [1,0]])
         annos = [[1, annos], [1, annos], [2, annos]]

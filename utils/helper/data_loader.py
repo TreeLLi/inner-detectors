@@ -57,7 +57,8 @@ def getClassId(cls, mapping=class_map, indices=None):
     except:
         if isinstance(mapping, list):
             for idx, m in enumerate(mapping):
-                id = getClassId(cls, m, [idx])
+                ind = [idx] if indices is None else indices + [idx]
+                id = getClassId(cls, m, ind)
                 if id is not None:
                     return id
         else:
@@ -69,14 +70,21 @@ def mapClassId(map_indices):
         id += val*1000 if idx == 0 else val*1000*(100**idx)
     return id
 
-def getClassName(cls_id, mapping=class_map):
+def getClassName(cls_id, mapping=class_map, full=False):
     id_str = str(cls_id)
     indices = [int(id_str[-3:])]
     id_str = id_str[:-3]
+    id_str = "0"+id_str if len(id_str)%2==1 else id_str
     indices += reversed([int(id_str[i:i+2]) for i in range(0, len(id_str), 2)])
-    for idx in indices:
+    name = ""
+    for i, idx in enumerate(indices):
         mapping = mapping[idx]
-    return mapping[0] if isinstance(mapping, list) else mapping
+        if full:
+            name += mapping[0] if isinstance(mapping, list) else mapping
+            name += "/" if i != len(indices)-1 else ""
+        else:
+            name = mapping[0] if isinstance(mapping, list) else mapping
+    return name
 
 def sortAsClass(mapping):
     sorted = []

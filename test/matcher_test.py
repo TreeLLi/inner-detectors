@@ -140,6 +140,22 @@ class TestMatcher(TestBase):
         self.assertEqual(matches.conv2[0].iou, 0.3)
         self.assertEqual(matches.conv2[0].count, 2)
 
+    def test_rearrange(self):
+        matches = {
+            "pool1" : {
+                1 : [0.5, 1],
+                2 : [0.5, 2]
+            },
+            "pool2" : {
+                2 : [0.2, 1],
+                3 : [0.5, 1]
+            }
+        }
+        rearrange = rearrangeMatches(matches)
+        self.assertLength(rearrange, 3)
+        self.assertEqual(rearrange[2]["pool1"], [0.5, 2])
+        self.assertEqual(rearrange[2]["pool2"], [0.2, 1])
+        
     def test_text_report(self):
         matches = edict()
         conv1 = edict()
