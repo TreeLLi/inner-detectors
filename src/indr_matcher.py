@@ -215,7 +215,10 @@ def topIndex(top_n, iou):
         
 def reportMatchesInText(matches, file_path, form):
     with open(file_path, 'w+') as f:
-        for unit, unit_matches in matches.items():
+        keys = list(matches.keys())
+        keys.sort()
+        for unit in keys:
+            unit_matches = matches[unit]
             if form == "concept":
                 unit = getClassName(unit, full=True)
             unit_line = "\n{}:\n".format(unit)
