@@ -20,11 +20,12 @@ class DeConvNet:
         self.params = np.load(self.param_file, encoding='latin1').item()
         self.base_model = model
         
-    def build(self):
+    def build(self, input_size=10):
         if not self.params:
             self.params = np.load(self.param_file, encoding='latin1').item()
             
-        layer = tf.placeholder(tf.float32, shape=(10, 7, 7, 512), name="input")
+        layer = tf.placeholder(tf.float32, shape=(input_size, ) + (7, 7, 512), name="input")
+        self.tensors["input"] = layer
         for name in self.layers:
             config = self.configs[name]
             layer_type = config.type
@@ -43,7 +44,23 @@ class DeConvNet:
         # last built layer is the output layer
         self.output = layer
         self.params = None
-        
+
+    def getSwitchTensor(self, layer):
+        return self.max_pool_switches[layer]
+
+    def getInputTensor(self, layer):
+        layers = self.layers
+        for idx, lay in enumerate(layers):
+            if lay != layer:
+                continue
+            # config of previous layer
+            pre_lay = layers[idx-1]
+            config = self.configs[pre_lay]
+            if config.type == "fc":
+                return self.tensors["input"]
+            else:
+                return self.tensors[pre_lay]
+            
     def unpoolLayer(self, bottom, name, switches, strides=[1, 2, 2, 1]):
         with tf.variable_scope(name):
             b, h, w, c = switches.shape.as_list()

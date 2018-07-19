@@ -65,7 +65,13 @@ class TestBase(unittest.TestCase):
     Assertion
     
     '''
-        
+
+    def assertEqual(self, first, second, msg=None):
+        first = first.tolist() if isinstance(first, np.ndarray) else first
+        second = second.tolist() if isinstance(second, np.ndarray) else second
+
+        return super(TestBase, self).assertEqual(first, second, msg)
+    
     def assertListEqual(self, first, second, msg=None):
         first = first.tolist() if isinstance(first, np.ndarray) else first
         second = second.tolist() if isinstance(second, np.ndarray) else second

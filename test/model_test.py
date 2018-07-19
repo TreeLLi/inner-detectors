@@ -30,7 +30,7 @@ Test VGG16 model
 
 '''
 
-vgg16 = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
+# vgg16 = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
 class TestVGG16(TestBase):
     def test_init(self):
         self.log()
@@ -82,18 +82,6 @@ class TestModelAgent(TestBase):
         self.assertLength(switches, 5)
         print (switches['pool5'].shape)
 
-    # def test_layer_unit(self):
-    #     self.log()
-    #     unit_id = 'pool5_1'
-    #     layer = layerOfUnit(unit_id)
-    #     self.assertEqual(layer, 'pool5')
-
-    # def test_layer_op(self):
-    #     self.log()
-    #     op = agent.graph.get_operation_by_name('conv1_1/filter')
-    #     layer = layerOfOp(op)
-    #     self.assertEqual(layer, 'conv1_1')
-
     def test_layer_fieldmaps(self):
         self.log()
         field_maps = layerFieldmaps(agent.model)
@@ -126,10 +114,35 @@ class TestModelAgent(TestBase):
         input_size = upsampled_shape(field_map, out_size)
         self.assertEqual(input_size, (224, 224))
 
+    def test_make_up(self):
+        unit = 0
+        activ_maps = np.asarray([
+            [[1, 2],
+             [3, 4],
+             ],
+            [[5, 6],
+             [7, 8]
+             ]
+        ])
+        ksize = (1, 2, 2, 3)
+        made = makeUpFullActivMaps(unit, activ_maps, ksize)
+        self.assertShape(made, (2, 2, 2, 3))
+        self.assertEqual(made[0], [[[1,0,0],[2,0,0]],[[3,0,0],[4,0,0]]])
+
+    def test_deconv_maps(self):
+        bl = BatchLoader(amount=1)
+        batch = bl.nextBatch()
+        imgs = batch[1]
+        agent = ModelAgent(input_size=1, deconv=True)
+        
+        probe_layer = ["pool5"]
+        activ_maps, switches = agent.getActivMaps(imgs, probe_layer)
+        ref_activ_maps = agent.getDeconvMaps(activ_maps, switches)
+        self.assertShape(ref_activ_maps["pool5_1"], (1, ) + CONFIG.MODEL.INPUT_DIM)
         
         
-agent = ModelAgent(input_size=10, deconv=True)
-demodel = agent.demodel
+# agent = ModelAgent(input_size=10, deconv=True)
+# demodel = agent.demodel
 
 class TestDeConvNet(TestBase):
     def test_unpool_layer(self):
@@ -152,6 +165,16 @@ class TestDeConvNet(TestBase):
 
     def test_build(self):
         demodel.build()
+
+    def test_input_tensor(self):
+        demodel.build()
+        layer = "pool1"
+        tensor = demodel.getInputTensor(layer)
+        self.assertEqual(tensor, demodel.tensors["conv2_1"])
+
+        layer = "pool5"
+        tensor = demodel.getInputTensor(layer)
+        self.assertEqual(tensor, demodel.tensors["input"])
         
 if __name__ == "__main__":
     unittest.main()

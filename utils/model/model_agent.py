@@ -46,6 +46,7 @@ class ModelAgent:
 
         if self.deconv:
             self.demodel = DeConvNet(self.model, PATH.MODEL.PARAM)
+            self.demodel.build(input_size)
 
     def getFieldmaps(self, file_path=None):
         if self.field_maps is not None:
@@ -100,12 +101,12 @@ class ModelAgent:
                      for layer, switch in switches.items()}
         
         for unit_id, activ_map in activ_maps.items():
+            print ("DeConv unit {}".format(unit_id))
             layer, unit = splitUnitID(unit_id)
-            config = self.model.getConfig(layer)
-            ksize = config.ksize
-            activ_map = makeUpFullActivMap(activ_map, unit, ksize)
 
             input_tensor = self.demodel.getInputTensor(layer)
+            kernel_num = input_tensor.shape[-1]
+            activ_map = makeUpFullActivMaps(unit, activ_map, kernel_num)
             feed_dict[input_tensor] = activ_map
 
             output_tensor = self.demodel.output
@@ -172,9 +173,11 @@ DeConvNet helpers
 '''
 
 # make up activ map to full size of output of layer by zeros
-def makeUpFullActivMap(activ_maps, ksize):
-    kernel_num = ksize[3]
-    
+def makeUpFullActivMaps(unit, activ_maps, kernel_num):
+    shape = activ_maps.shape + (kernel_num, )
+    made = np.zeros(shape=shape)
+    made[:, :, :, unit] = activ_maps[:, :, :]
+    return made
 
     
 '''
@@ -188,8 +191,8 @@ def unitOfLayer(layer, index):
 def splitUnitID(unit_id):
     spl = unit_id.split('_')
     if len(spl) == 2:
-        return spl[0], spl[1]
+        return spl[0], int(spl[1])
     elif len(spl) == 3:
         layer = "{}_{}".format(spl[0], spl[1])
-        unit = spl[2]
+        unit = int(spl[2])
         return layer, unit
