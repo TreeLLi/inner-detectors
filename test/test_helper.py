@@ -90,5 +90,6 @@ class TestBase(unittest.TestCase):
 
     def assertShape(self, expr, shape):
         if isinstance(expr, np.ndarray):
+            shape = shape if isinstance(shape, tuple) else tuple(shape)
             self.assertEqual(expr.shape, shape)
         # TODO - shape comparison of primitive list

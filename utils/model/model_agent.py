@@ -101,7 +101,6 @@ class ModelAgent:
                      for layer, switch in switches.items()}
         
         for unit_id, activ_map in activ_maps.items():
-            print ("DeConv unit {}".format(unit_id))
             layer, unit = splitUnitID(unit_id)
 
             input_tensor = self.demodel.getInputTensor(layer)

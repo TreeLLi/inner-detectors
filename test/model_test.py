@@ -30,7 +30,7 @@ Test VGG16 model
 
 '''
 
-# vgg16 = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
+vgg16 = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
 class TestVGG16(TestBase):
     def test_init(self):
         self.log()
@@ -137,12 +137,13 @@ class TestModelAgent(TestBase):
         
         probe_layer = ["pool5"]
         activ_maps, switches = agent.getActivMaps(imgs, probe_layer)
+        activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
         ref_activ_maps = agent.getDeconvMaps(activ_maps, switches)
-        self.assertShape(ref_activ_maps["pool5_1"], (1, ) + CONFIG.MODEL.INPUT_DIM)
+        self.assertShape(ref_activ_maps["pool5_1"], [1] + CONFIG.MODEL.INPUT_DIM)
         
         
-# agent = ModelAgent(input_size=10, deconv=True)
-# demodel = agent.demodel
+agent = ModelAgent(input_size=10, deconv=True)
+demodel = agent.demodel
 
 class TestDeConvNet(TestBase):
     def test_unpool_layer(self):
