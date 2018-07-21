@@ -5,25 +5,25 @@ To map activations back to input spaces
 
 '''
 
+
 import tensorflow as tf
-import numpy as np
 
+from utils.model.net import Net
 
-class DeConvNet:
+class DeConvNet(Net):
     
-    def __init__(self, model, param_file):
+    def __init__(self, model):
+        self.base_model = model
         self.layers = list(reversed(model.layers))
         self.configs = model.configs
         self.max_pool_switches = model.max_pool_switches
-        self.tensors = {}
-        self.param_file = param_file
-        self.params = np.load(self.param_file, encoding='latin1').item()
-        self.base_model = model
+        self.net_type = model.net_type
+        
+        super(DeConvNet, self).__init__(param_file=model.param_file)
         
     def build(self, input_size=10):
-        if not self.params:
-            self.params = np.load(self.param_file, encoding='latin1').item()
-            
+        self.loadParams()
+        
         layer = tf.placeholder(tf.float32, shape=(input_size, ) + (7, 7, 512), name="input")
         self.tensors["input"] = layer
         for name in self.layers:
@@ -42,24 +42,11 @@ class DeConvNet:
                 layer = self.transposeConvLayer(layer, name, ksize, strides, padding)
                 self.tensors[name] = layer
         # last built layer is the output layer
-        self.output = layer
+        self.output_tensor = layer
         self.params = None
 
     def getSwitchTensor(self, layer):
         return self.max_pool_switches[layer]
-
-    def getInputTensor(self, layer):
-        layers = self.layers
-        for idx, lay in enumerate(layers):
-            if lay != layer:
-                continue
-            # config of previous layer
-            pre_lay = layers[idx-1]
-            config = self.configs[pre_lay]
-            if config.type == "fc":
-                return self.tensors["input"]
-            else:
-                return self.tensors[pre_lay]
             
     def unpoolLayer(self, bottom, name, switches, strides=[1, 2, 2, 1]):
         with tf.variable_scope(name):
@@ -81,9 +68,9 @@ class DeConvNet:
     def transposeConvLayer(self, bottom, name, ksize, strides=[1, 1, 1, 1], padding='SAME'):
         with tf.variable_scope(name):
             layer = tf.nn.relu(bottom, name="relu")
-            conv_bias = self.base_model.loadBias(name, self.params)
+            conv_bias = self.loadBias(name)
             layer = tf.nn.bias_add(layer, -conv_bias)
-            kernel = self.base_model.loadConvFilter(name, self.params)
+            kernel = self.loadConvFilter(name)
             _, _, in_chnl, _ = ksize
             layer = tf.nn.conv2d_transpose(layer,
                                            kernel,

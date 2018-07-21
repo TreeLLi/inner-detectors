@@ -16,7 +16,7 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from utils.model.vgg16 import Vgg16
+from utils.model.convnet import ConvNet
 from utils.model.model_agent import *
 from utils.model.deconvnet import *
 from utils.helper.data_loader import BatchLoader
@@ -26,15 +26,15 @@ from src.config import PATH
 
 
 '''
-Test VGG16 model
+Test CONVNET model
 
 '''
 
-vgg16 = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
-class TestVGG16(TestBase):
+convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
+class TestConvNet(TestBase):
     def test_init(self):
         self.log()
-        self.assertIsNotNone(vgg16)
+        self.assertIsNotNone(convnet)
         
     def test_eval(self):
         self.log()
@@ -42,12 +42,11 @@ class TestVGG16(TestBase):
         batch = bl.nextBatch()
         imgs = batch[1]
 
-        input = tf.placeholder("float", imgs.shape)
-        feed_dict = {input : imgs}
-        vgg16.build(input)
+        convnet.build(10)
+        feed_dict = convnet.createFeedDict(imgs)
         
         with tf.Session() as sess:
-            pool5 = sess.run(vgg16.getLayerTensor('pool5'), feed_dict=feed_dict)
+            pool5 = sess.run(convnet.getTensor('pool5'), feed_dict=feed_dict)
             self.assertEqual(pool5.shape, (10, 7, 7, 512))
 
             
@@ -65,14 +64,15 @@ class TestModelAgent(TestBase):
 
     def test_get_activ_maps(self):
         self.log()
+        agent.deconv = False
         bl = BatchLoader(amount=1)
         batch = bl.nextBatch()
         imgs = batch[1]
         activ_maps = agent.getActivMaps(imgs, ['pool5'])
 
         self.assertLength(activ_maps, 512)
-        self.assertEqual(activ_maps['pool5_1'].shape, (1, 7, 7))
-        self.assertEqual(activ_maps['pool5_2'].shape, (1, 7, 7))
+        self.assertShape(activ_maps['pool5_1'], (1, 7, 7))
+        self.assertShape(activ_maps['pool5_2'], (1, 7, 7))
 
         agent_2 = ModelAgent(input_size=1, deconv=True)
         activ_maps, switches = agent_2.getActivMaps(imgs, ['pool5'])
@@ -115,6 +115,7 @@ class TestModelAgent(TestBase):
         self.assertEqual(input_size, (224, 224))
 
     def test_make_up(self):
+        self.log()
         unit = 0
         activ_maps = np.asarray([
             [[1, 2],
@@ -124,12 +125,13 @@ class TestModelAgent(TestBase):
              [7, 8]
              ]
         ])
-        ksize = (1, 2, 2, 3)
+        ksize = 3
         made = makeUpFullActivMaps(unit, activ_maps, ksize)
         self.assertShape(made, (2, 2, 2, 3))
         self.assertEqual(made[0], [[[1,0,0],[2,0,0]],[[3,0,0],[4,0,0]]])
 
     def test_deconv_maps(self):
+        self.log()
         bl = BatchLoader(amount=1)
         batch = bl.nextBatch()
         imgs = batch[1]
@@ -160,14 +162,17 @@ class TestDeConvNet(TestBase):
         bottom = tf.placeholder(tf.float32, shape=(10, 14, 14, 512))
         name = "conv5_3"
         ksize = [3, 3, 512, 512]
+        demodel.loadParams()
         layer = demodel.transposeConvLayer(bottom, name, ksize)
         self.assertIsNotNone(layer)
         self.assertEqual(layer.shape.as_list(), [10, 14, 14, 512])
 
     def test_build(self):
+        self.log()
         demodel.build()
 
     def test_input_tensor(self):
+        self.log()
         demodel.build()
         layer = "pool1"
         tensor = demodel.getInputTensor(layer)

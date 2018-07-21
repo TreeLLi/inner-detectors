@@ -21,7 +21,7 @@ root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import PATH, CONFIG, isVGG16
+from src.config import PATH, CONFIG
 from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
 

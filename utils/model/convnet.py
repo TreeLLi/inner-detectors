@@ -1,35 +1,20 @@
 import inspect
-import os
-
-import numpy as np
-import tensorflow as tf
 import time
 
-from easydict import EasyDict as edict
+import tensorflow as tf
 
-from utils.helper.file_manager import loadObject
+from utils.model.net import Net
 
-VGG_MEAN = [103.939, 116.779, 123.68]
-
-
-class Vgg16:
-    def __init__(self, config, param_path, deconv=False):        
-        self.params = None
-        self.param_path = param_path
+class ConvNet(Net):
+    def __init__(self, config_file, param_file, deconv=False):        
+        super(ConvNet, self).__init__(config_file, param_file)
+        
         self.deconv = deconv
+        if deconv:
+            self.max_pool_switches = {}
 
-        config = loadObject(config)
-        self.layers = []
-        self.configs = {}
-        for layer_config in config:
-            name = layer_config[0]
-            self.layers.append(name)
-            self.configs[name] = edict(layer_config[1])
         
-        self.max_pool_switches = {}
-        self.tensors = {}
-        
-    def build(self, rgb):
+    def build(self, input_size=10):
         """
         load variable from npy to build the VGG
 
@@ -38,21 +23,20 @@ class Vgg16:
 
         start_time = time.time()
         print("build model started")
-        rgb_scaled = rgb * 255.0
+        self.loadParams()
 
-        if not self.params:
-            self.params = np.load(self.param_path, encoding='latin1').item()
-            print("npy file loaded")
-        
+        rgb = tf.placeholder(tf.float32, shape=(input_size, )+self.input_dim, name="input")
+        self.tensors["input"] = rgb
+        rgb_scaled = rgb * 255.0
         # Convert RGB to BGR
         red, green, blue = tf.split(axis=3, num_or_size_splits=3, value=rgb_scaled)
         assert red.get_shape().as_list()[1:] == [224, 224, 1]
         assert green.get_shape().as_list()[1:] == [224, 224, 1]
         assert blue.get_shape().as_list()[1:] == [224, 224, 1]
         bgr = tf.concat(axis=3, values=[
-            blue - VGG_MEAN[0],
-            green - VGG_MEAN[1],
-            red - VGG_MEAN[2],
+            blue - self.input_mean[0],
+            green - self.input_mean[1],
+            red - self.input_mean[2],
         ])
         assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
 
@@ -65,51 +49,41 @@ class Vgg16:
                 strides = config.strides
                 padding = config.padding
                 layer = self.convLayer(layer, name, strides, padding)
+                self.tensors[name] = layer
             elif layer_type == 'pool':
                 ksize = config.ksize
                 strides = config.strides
                 padding = config.padding
                 layer = self.maxPoolLayer(layer, name, ksize, strides, padding, self.deconv)
+                self.tensors[name] = layer
             elif layer_type == 'fc':
                 layer = self.fcLayer(layer, name)
                 if "relu" in config and config.relu:
                     layer = tf.nn.relu(layer)
+                self.tensors[name] = layer
             elif layer_type == 'classifier':
                 classifier = config.classifier
                 if classifier == 'softmax':
                     layer = tf.nn.softmax(layer, name=name)
+                self.tensors[name] = layer
             else:
                 print ("Error: unknown layer_type {} for layer {}".format(layer_type, name))
-
-            self.tensors[name] = layer
             
         self.params = None
         print(("build model finished: %ds" % (time.time() - start_time)))
 
 
-    def getUpLayer(self, layer):
-        idx = self.layers.index(layer)
-        if idx < len(self.layers)-1:
-            return self.layers[idx+1]
-        else:
-            raise Exception("Error: try to access an unexisted up layer.")
-        
-    def getLayerTensor(self, layer):
-        if isinstance(layer, list):
-            return [self.tensors[x] for x in layer]
-        elif isinstance(layer, str):
-            return self.tensors[layer]
+    def createFeedDict(self, data):
+        input_tensor = self.getInputTensor()
+        return {input_tensor : data}
 
-    def getConfig(self, layer):
-        if isinstance(layer, list):
-            return [self.configs[x] for x in layer]
-        elif isinstance(layer, str):
-            return self.configs[layer]
-
-    def getSwitchTensor(self, layer):
-        return self.max_pool_switches[layer]
-    
-    def maxPoolLayer(self, bottom, name, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', deconv=False):
+    def maxPoolLayer(self,
+                     bottom,
+                     name,
+                     ksize=[1, 2, 2, 1],
+                     strides=[1, 2, 2, 1],
+                     padding='SAME',
+                     deconv=False):
         if not deconv:
             return tf.nn.max_pool(bottom,
                                   ksize=ksize,
@@ -153,18 +127,3 @@ class Vgg16:
             fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
 
             return fc
-
-    def loadConvFilter(self, name, params=None):
-        if not params:
-            params = self.params
-        return tf.constant(params[name][0], name="filter")
-
-    def loadBias(self, name, params=None):
-        if not params:
-            params = self.params
-        return tf.constant(params[name][1], name="biases")
-
-    def loadFCWeight(self, name, params=None):
-        if not params:
-            params = self.params
-        return tf.constant(params[name][0], name="weights")

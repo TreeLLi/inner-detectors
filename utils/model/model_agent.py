@@ -15,9 +15,9 @@ root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
     sys.path.append(root_path)
 
-from utils.model.vgg16 import Vgg16
+from utils.model.convnet import ConvNet
 from utils.model.deconvnet import DeConvNet
-from utils.helper.file_manager import loadListFromText, loadObject, saveObject
+from utils.helper.file_manager import loadObject, saveObject
 from utils.dissection.upsample import compose_fieldmap, upsampleL
 from src.config import *
 
@@ -30,22 +30,19 @@ Model Agent
 class ModelAgent:
 
     def __init__(self,
-                 model=CONFIG.DIS.MODEL,
                  input_size=10,
-                 input_dim=CONFIG.MODEL.INPUT_DIM,
                  deconv=False):
         self.field_maps = None
-        self.input_dim = (input_size, ) + tuple(input_dim)
+        self.input_size = input_size
         self.deconv = deconv
         
         # initialise base model according to the given str
-        if isVGG16(model):
-            self.model = Vgg16(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=deconv)
-            self.input_pholder = tf.placeholder("float", self.input_dim)
-            self.model.build(self.input_pholder)
-
+        self.model = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=deconv)
+        self.model.build(input_size)
+        CONFIG.MODEL.INPUT_DIM = self.model.input_dim
+        
         if self.deconv:
-            self.demodel = DeConvNet(self.model, PATH.MODEL.PARAM)
+            self.demodel = DeConvNet(self.model)
             self.demodel.build(input_size)
 
     def getFieldmaps(self, file_path=None):
@@ -67,23 +64,23 @@ class ModelAgent:
             
     def getActivMaps(self, imgs, layers):
         print ("Fetching activation maps for specific units ...")
+        model = self.model
         # generate activation data by forward pass
-        if imgs.shape != self.input_dim:
+        if imgs.shape[0] != self.input_size:
             # rebuild model for new input dimension
-            self.input_dim = imgs.shape
-            self.input_pholder = tf.placeholder("float", self.input_dim)
-            self.model.build(self.input_pholder)
+            self.input_size = imgs.shape[0]
+            model.build(self.input_size)
 
         fetches = {"activs" : {}}
         for layer in layers:
-            fetches['activs'][layer] = self.model.getLayerTensor(layer)
+            fetches['activs'][layer] = model.getTensor(layer)
         if self.deconv:
-            fetches['switches'] = self.model.max_pool_switches
-        feed_dict = {self.input_pholder : imgs}
+            fetches['switches'] = model.max_pool_switches
+        feed_dict = model.createFeedDict(imgs)
         with tf.Session() as sess:
             results = sess.run(fetches, feed_dict=feed_dict)
 
-        activ_maps = edict()
+        activ_maps = {}
         for layer, layer_activ_maps in results['activs'].items():
             # the dimensions of activation maps: (img_num, width, length, filter_num)
             unit_num = layer_activ_maps.shape[3]
@@ -97,23 +94,24 @@ class ModelAgent:
             return activ_maps, results['switches']
 
     def getDeconvMaps(self, activ_maps, switches):
-        feed_dict = {self.demodel.getSwitchTensor(layer) : switch
+        switch_feed = {self.demodel.getSwitchTensor(layer) : switch
                      for layer, switch in switches.items()}
-        
+
+        demodel = self.demodel
         for unit_id, activ_map in activ_maps.items():
             layer, unit = splitUnitID(unit_id)
 
-            input_tensor = self.demodel.getInputTensor(layer)
+            input_tensor = demodel.getInputTensor(layer)
             kernel_num = input_tensor.shape[-1]
             activ_map = makeUpFullActivMaps(unit, activ_map, kernel_num)
-            feed_dict[input_tensor] = activ_map
+            feed_dict = demodel.createFeedDict(activ_map, layer, switch_feed)
 
-            output_tensor = self.demodel.output
+            output_tensor = demodel.output_tensor
             with tf.Session() as sess:
                 activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
 
         return activ_maps
-                
+
 
 '''
 Fieldmaps Helpers

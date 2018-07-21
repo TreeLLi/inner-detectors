@@ -13,8 +13,6 @@ _root_path = os.path.join(_curr_path, "..")
 if _root_path not in sys.path:
     sys.path.insert(0, _root_path)
 
-from utils.model.vgg16 import Vgg16
-
 
 '''
 Config for program parameters
@@ -48,9 +46,6 @@ CONFIG.DIS.REPORT_FIGURE = False
 
 # models
 CONFIG.MODEL = edict()
-if CONFIG.DIS.MODEL == "VGG16":
-    CONFIG.MODEL.ID = "VGG16"
-    CONFIG.MODEL.INPUT_DIM = (224, 224, 3)
 
     
 '''
@@ -115,14 +110,6 @@ Auxilary functions
 To determine status
 
 '''
-
-def isVGG16(model):
-    if isinstance(model, Vgg16):
-        return True
-    elif isinstance(model, str) and model.upper()=="VGG16":
-        return True
-    else:
-        return False
 
 
 def isPASCAL(source):
