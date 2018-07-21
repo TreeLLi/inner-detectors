@@ -119,29 +119,23 @@ class TestFileManager(TestBase):
         image = loadImage(path, "2008_004198.jpg")
         self.assertShape(image, (375, 500, 3))
         
-    def test_load_list(self):
-        path = os.path.join(PATH.ROOT, "src/layers_vgg16.txt")
-        layers = loadListFromText(path)
-        self.assertNotEmpty(layers)
-
-    def test_load_json(self):
-        path = PATH.MODEL.CONFIG
-        config = loadObject(path)
-        self.assertIsNotNone(config)
-        self.assertLength(config, 22)
-        # check config of conv2_1
-        self.assertEqual(config[3][1]['ksize'], [3, 3, 64, 128])
-        # check config of pool2
-        self.assertEqual(config[5][1]['strides'], [1, 2, 2, 1])
+    def test_save_load_list_text(self):
+        path = os.path.join(PATH.TEST.ROOT, "save_load_list.txt")
+        test = [1, 2]
+        saveObject(test, path)
+        loaded = loadObject(path)
+        os.remove(path)
+        self.assertEqual(loaded, test)
         
-    def test_save_object(self):
-        file_path = "output/test/test.pkl"
-        obj = [1]
-        saveObject(obj, file_path)
         
-        self.assertTrue(os.path.isfile(file_path))
-        os.remove(file_path)
-        os.rmdir(os.path.dirname(file_path))
+    def test_save_load_json(self):
+        path = os.path.join(PATH.TEST.ROOT, "save_load_json.json")
+        test = {"1" : 2, 2:1}
+        saveObject(test, path)
+        loaded = loadObject(path)
+        os.remove(path)
+        self.assertEqual(loaded, test)
+        
         
 class TestAnnoParser(TestBase):
 

@@ -71,7 +71,11 @@ def mapClassId(map_indices):
     return id
 
 def getClassName(cls_id, mapping=class_map, full=False):
-    id_str = str(cls_id)
+    if cls_id < 1000:
+        name = mapping[cls_id]
+        return name[0] if isinstance(name, list) else name
+    
+    id_str = str(cls_id)    
     indices = [int(id_str[-3:])]
     id_str = id_str[:-3]
     id_str = "0"+id_str if len(id_str)%2==1 else id_str

@@ -46,6 +46,7 @@ CONFIG.DIS.REPORT_FIGURE = False
 
 # models
 CONFIG.MODEL = edict()
+CONFIG.MODEL.INPUT_DIM = (224, 224 ,3)
 
     
 '''
@@ -59,7 +60,7 @@ PATH = edict()
 _data_path = os.path.join(_root_path, "datasets")
 _pascal_path = os.path.join(_data_path, "pascal_part")
 _output_path = os.path.join(_root_path, "output")
-
+_test_path = os.path.join(_root_path, "test")
 
 # global path
 PATH.ROOT = _root_path
@@ -102,8 +103,12 @@ if CONFIG.DIS.MODEL == "VGG16":
     PATH.MODEL.CONFIG = os.path.join(_model_path, "vgg16/vgg16_config.json")
     PATH.MODEL.PROBE = os.path.join(_root_path, "src/vgg16_probe.txt")
     PATH.MODEL.FIELDMAPS = os.path.join(_vgg16_path, "vgg16_fieldmaps.pkl")
-    #PATH.MODEL.REF_ACTIV_MAPS = os.path.join(_vgg16_path, "ref_activ_maps/")
 
+
+# test path
+PATH.TEST = edict()
+PATH.TEST.ROOT = _test_path
+    
 '''
 Auxilary functions
 

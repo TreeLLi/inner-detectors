@@ -112,7 +112,7 @@ def saveListAsText(obj, file_path):
                 if isinstance(e, list) or isinstance(e, tuple):
                     e = ["{:.2f}".format(x) if isinstance(x, float) else str(x)
                          for x in e]
-                    line = ''.join([x if x is e[-1] else x+',\t'
+                    line = ''.join([x if x is e[-1] else x+','
                                     for x in e])
                 else:
                     line = str(e)

@@ -93,3 +93,7 @@ class TestBase(unittest.TestCase):
             shape = shape if isinstance(shape, tuple) else tuple(shape)
             self.assertEqual(expr.shape, shape)
         # TODO - shape comparison of primitive list
+
+    def assertExists(self, directory):
+        exist = os.path.exists(directory)
+        self.assertTrue(exist)

@@ -4,7 +4,6 @@ Test activations and annotations matcher:
 '''
 
 import unittest, os, sys
-from easydict import EasyDict as edict
 import numpy as np
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
@@ -19,62 +18,48 @@ from src.indr_matcher import *
 class TestMatcher(TestBase):
 
     def test_single_match(self):
+        self.log()
         activ = np.asarray([[0,0],[1,0]])
         annos = []
-        annos.append(edict({
-            "name" : "test",
-            "category" : "object",
-            "mask" : np.asarray([[0,0],[1,0]])
-        }))
-        annos.append(edict({
-            "name" : "test",
-            "category" : "object",
-            "mask" : np.asarray([[0,0],[0,0]])
-        }))
-        annos.append(edict({
-            "name" : "part",
-            "category" : "part",
-            "partof" : "object",
-            "mask" : np.asarray([[1,1],[1,1]])
-        }))
+        annos.append([
+            1,
+            np.asarray([[0,0],[1,0]])
+        ])
+        annos.append([
+            1,
+            np.asarray([[0,0],[0,0]])
+        ])
+        annos.append([
+            2,
+            np.asarray([[1,1],[1,1]])
+        ])
         
         matches = matchActivAnnos(activ, annos)
 
-        self.assertEqual(matches.test.iou, 0.5)
-        self.assertEqual(matches.test.count, 2)
-        self.assertEqual(matches.part.iou, 0.25)
-        self.assertEqual(matches.part.category, "part")
+        self.assertEqual(matches[1][0], 0.5)
+        self.assertEqual(matches[1][1], 2)
+        self.assertEqual(matches[2][0], 0.25)
 
 
     def test_multiple_matches(self):
+        self.log()
         unit = 'conv5'
-        batch_matches = edict()
-        img_m1 = edict()
-        img_m1.leg = edict({
-            "iou" : 0.5,
-            "count" : 1
-        })
-        img_m1.arm = edict({
-            "iou" : 1,
-            "count" : 2
-        })
-        img_m2 = edict()
-        img_m2.leg = edict({
-            "iou" : 1,
-            "count" : 1
-        })
-        img_m2.head = edict({
-            "iou" : 0,
-            "count" : 2
-        })
+        batch_matches = {}
+        img_m1 = {
+            "leg" : [0.5, 1],
+            "arm" : [1, 2]
+        }
+        img_m2 = {
+            "leg" : [1, 1],
+            "head" : [0, 2]
+        }
         batch_matches[unit] = [img_m1, img_m2]
 
-        matches = edict()
-        matches.conv5 = edict()
-        matches.conv5.arm = edict({
-            "iou" : 0,
-            "count" : 2
-        })
+        matches = {
+            unit : {
+                "arm" : [0, 2]
+            }
+        }
 
         # test None input
         results = combineMatches(None, None)
@@ -82,14 +67,15 @@ class TestMatcher(TestBase):
         
         combineMatches(matches, batch_matches)
 
-        self.assertEqual(matches.conv5.arm.iou, 0.5)
-        self.assertEqual(matches.conv5.arm.count, 4)
-        self.assertEqual(matches.conv5.leg.iou, 0.75)
-        self.assertEqual(matches.conv5.leg.count, 2)
-        self.assertEqual(matches.conv5.head.iou, 0)
-        self.assertEqual(matches.conv5.head.count, 2)
+        self.assertEqual(matches[unit]["arm"][0], 0.5)
+        self.assertEqual(matches[unit]["arm"][1], 4)
+        self.assertEqual(matches[unit]["leg"][0], 0.75)
+        self.assertEqual(matches[unit]["leg"][1], 2)
+        self.assertEqual(matches[unit]["head"][0], 0)
+        self.assertEqual(matches[unit]["head"][1], 2)
 
     def test_weighted_iou(self):
+        self.log()
         iou_1 = 0
         iou_2 = 1
         count_1 = 1
@@ -99,48 +85,37 @@ class TestMatcher(TestBase):
         self.assertEqual(iou, 0.5)
 
     def test_top_index(self):
+        self.log()
         top_n = [('1', 0.3), ('2', 0.2), ('3', 0.1)]
         iou = 0.15
         index = topIndex(top_n, iou)
         self.assertEqual(index, 2)
-        self.assertEqual(len(top_n), 3)
+        self.assertLength(top_n, 3)
         
     def test_matches_filter(self):
-        matches = edict()
-        conv1 = edict()
-        conv1.leg = edict({
-            "iou" : 0.5,
-            "category" : 'part',
-            "count" : 1
-        })
-        conv1.arm = edict({
-            "iou" : 0.2,
-            "count" : 2
-        })
-        conv2 = edict()
-        conv2.head = edict({
-            "iou" : 0.3,
-            "count" : 2
-        })
-        conv2.leg = edict({
-            "iou" : 0,
-            "count" : 5
-        })
-        matches.conv1 = conv1
-        matches.conv2 = conv2
+        self.log()
+        matches = {
+            "conv1" : {
+                "leg" : [0.5, 1],
+                "arm" : [0.2, 2]
+            },
+            "conv2" : {
+                "head" : [0.3, 2],
+                "leg" : [0, 5]
+            }
+        }
         
-        filterMatches(matches, top=1, iou_thres=0.3)
-        self.assertEqual(len(matches.conv1), 1)
-        self.assertEqual(matches.conv1[0].name, "leg")
-        self.assertEqual(matches.conv1[0].iou, 0.5)
-        self.assertEqual(matches.conv1[0].count, 1)
-        self.assertEqual(matches.conv1[0].category, "part")
+        matches = filterMatches(matches, top=1, iou_thres=0.3)
+        self.assertLength(matches["conv1"], 1)
+        self.assertEqual(matches["conv1"][0][0], "leg")
+        self.assertEqual(matches["conv1"][0][1], 0.5)
+        self.assertEqual(matches["conv1"][0][2], 1)
 
-        self.assertEqual(matches.conv2[0].name, 'head')
-        self.assertEqual(matches.conv2[0].iou, 0.3)
-        self.assertEqual(matches.conv2[0].count, 2)
+        self.assertEqual(matches["conv2"][0][1], 0.3)
+        self.assertEqual(matches["conv2"][0][2], 2)
 
     def test_rearrange(self):
+        self.log()
         matches = {
             "pool1" : {
                 1 : [0.5, 1],
@@ -157,33 +132,24 @@ class TestMatcher(TestBase):
         self.assertEqual(rearrange[2]["pool2"], [0.2, 1])
         
     def test_text_report(self):
-        matches = edict()
-        conv1 = edict()
-        conv1.leg = edict({
-            "iou" : 0.5,
-            "category" : 'part',
-            "count" : 1
-        })
-        conv1.arm = edict({
-            "iou" : 0.2,
-            "count" : 2
-        })
-        conv2 = edict()
-        conv2.head = edict({
-            "iou" : 0.3,
-            "count" : 2
-        })
-        conv2.leg = edict({
-            "iou" : 0,
-            "count" : 5
-        })
-        matches.conv1 = conv1
-        matches.conv2 = conv2
+        self.log()
+        matches = {
+            "conv1" : {
+                1 : [0.5, 1],
+                2 : [0.2, 2]
+            },
+            "conv2" : {
+                3 : [0.3, 2],
+                1 : [0, 5]
+            }
+        }
         
-        filterMatches(matches, top=2, iou_thres=0.0)
-        reportMatchesInText(matches)
-
+        matches = filterMatches(matches, top=2, iou_thres=0.0)
+        reportMatchesInText(matches, PATH.OUT.UNIT_MATCH_REPORT, "unit")
+        self.assertExists(PATH.OUT.UNIT_MATCH_REPORT)
+        
     def test_split_activ_maps(self):
+        self.log()
         activ_maps = {
             1 : 1,
             2 : 2,
