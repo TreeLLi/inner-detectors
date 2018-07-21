@@ -30,7 +30,7 @@ Test CONVNET model
 
 '''
 
-convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
+#convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
 class TestConvNet(TestBase):
     def test_init(self):
         self.log()
@@ -132,20 +132,21 @@ class TestModelAgent(TestBase):
 
     def test_deconv_maps(self):
         self.log()
-        bl = BatchLoader(amount=1)
+        num = 10
+        bl = BatchLoader(amount=num)
         batch = bl.nextBatch()
         imgs = batch[1]
-        agent = ModelAgent(input_size=1, deconv=True)
+        agent = ModelAgent(input_size=num, deconv=True)
         
         probe_layer = ["pool5"]
         activ_maps, switches = agent.getActivMaps(imgs, probe_layer)
         activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
         ref_activ_maps = agent.getDeconvMaps(activ_maps, switches)
-        self.assertShape(ref_activ_maps["pool5_1"], [1] + CONFIG.MODEL.INPUT_DIM)
+        self.assertShape(ref_activ_maps["pool5_1"], [num] + CONFIG.MODEL.INPUT_DIM)
         
         
-agent = ModelAgent(input_size=10, deconv=True)
-demodel = agent.demodel
+# agent = ModelAgent(input_size=10, deconv=True)
+# demodel = agent.demodel
 
 class TestDeConvNet(TestBase):
     def test_unpool_layer(self):

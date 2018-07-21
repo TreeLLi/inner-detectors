@@ -40,7 +40,7 @@ def loadImage(directory, file_name):
         print ("Error: failed to load image {}".format(file_name))
         return None
 
-def saveImage(directory, img):
+def saveImage(img, directory):
     try:
         imsave(directory, img)
     except Exception as e:

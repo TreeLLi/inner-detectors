@@ -36,7 +36,8 @@ CONFIG.DIS = edict()
 # normal: run through normal procedures, like forward pass and reflection
 CONFIG.DIS.MODE = "fast"
 CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
-CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
+#CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
+CONFIG.DIS.REFLECT = "deconvnet"
 
 CONFIG.DIS.IOU_THRESHOLD = 0.1
 CONFIG.DIS.TOP = 3

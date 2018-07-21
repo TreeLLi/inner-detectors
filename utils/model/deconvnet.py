@@ -52,8 +52,9 @@ class DeConvNet(Net):
         with tf.variable_scope(name):
             b, h, w, c = switches.shape.as_list()
             _, s_h, s_w, _ = strides
+            num = (s_h*h) * (s_w*w) * c
             flattened = [tf.scatter_nd(
-                tf.reshape(switches[i], [-1, 1]),
+                tf.reshape(switches[i]-num*i, [-1, 1]),
                 tf.reshape(bottom[i, :, :, :], [-1]),
                 [(s_h*h) * (s_w*w) * c],
                 name="flatten_{}".format(i)
@@ -64,7 +65,7 @@ class DeConvNet(Net):
                                [b, s_h*h, s_w*w, c],
                                name="reconstruction")
         return layer
-        
+    
     def transposeConvLayer(self, bottom, name, ksize, strides=[1, 1, 1, 1], padding='SAME'):
         with tf.variable_scope(name):
             layer = tf.nn.relu(bottom, name="relu")

@@ -17,7 +17,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from utils.helper.data_loader import BatchLoader, getClassName
-from utils.helper.file_manager import saveObject, loadObject
+from utils.helper.file_manager import saveObject, loadObject, saveImage
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
 from utils.dissection.iou import iou
@@ -295,7 +295,6 @@ if __name__ == "__main__":
         model = ModelAgent()
         field_maps = model.getFieldmaps()    
     elif reflect_mode == "deconvnet":
-        from utils.dissection.deconvnet import reflect
         model = ModelAgent(deconv=True)
 
     pool = Pool()
@@ -307,19 +306,27 @@ if __name__ == "__main__":
         images = batch[1]
         annos = batch[2]
 
-        print ("Fetching activation maps for specific units ...")
         if reflect_mode == "interpolation":
             activ_maps = model.getActivMaps(images, probe_layers)
+            activ_maps = splitActivMaps(activ_maps, num)
+            params = [(amap, field_maps, annos) for amap in activ_maps]
+            print ("Reflecting and matching activation maps")
+            batch_matches = pool.starmap(reflectAndMatch, params)
+            batch_match = {}
+            for m in batch_matches:
+                batch_match = {**batch_match, **m}
         elif reflect_mode == "deconvnet":
             activ_maps, switches = model.getActivMaps(images, probe_layers)
-        activ_maps = splitActivMaps(activ_maps, num)
-        params = [(amap, field_maps, annos) for amap in activ_maps]
-        print ("Reflecting and matching activation maps")
-        batch_matches = pool.starmap(reflectAndMatch, params)
-        
+            print ("Reflecting back via DeConvNet...")
+            activ_maps = splitActivMaps(activ_maps, num)
+            params = [(amap, switches) for amap in activ_maps]
+            activ_maps = pool.starmap(model.getDeconvMaps, params)
+            # for idx, img in enumerate(activ_maps["pool2_2"]):
+            #     saveImage(img, os.path.join(PATH.OUT.ROOT, "{}.jpg".format(idx)))
+            #batch_match = matchActivsAnnos(activ_maps, annos)
+            
         print ("Integrating matches results of a batch into final results ...")
-        for batch_match in batch_matches:
-            matches = combineMatches(matches, batch_match)
+        #matches = combineMatches(matches, batch_match)
         batch_matches = None
         
         reportProgress(start, time.time(), bl.batch_id, len(images), bl.size)
