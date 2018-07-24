@@ -41,8 +41,7 @@ def binarise(a, per=0, sequence=False):
     else:
         for idx, _a in enumerate(a):
             _per = per[idx]
-            _a[_a > _per] = 1
-            _a[_a <= _per] = 0
+            binarise(_a, _per)
 
             
 '''

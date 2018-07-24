@@ -228,7 +228,7 @@ def reportMatchesInText(matches, file_path, form):
                 concept = getClassName(concept, full=True) if form=="unit" else concept
                 iou = match[1]
                 count = match[2]
-                match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(concept, iou, count)
+                match_line = "{:20} \tIoU: {:.2f} \tCount: {:2}\n".format(concept, iou, count)
                 f.write(match_line)
             if len(unit_matches) == 0:
                 f.write("No significant matches found.\n")
@@ -284,7 +284,7 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=20)
+    bl = BatchLoader(amount=10)
     model = ModelAgent(input_size=10)
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
