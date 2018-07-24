@@ -9,7 +9,7 @@ To manage all files' inputs and outpus
 import os, sys
 import pickle
 import json
-from scipy.misc import imread, imsave
+import cv2
 
 
 '''
@@ -31,18 +31,23 @@ Images I/O
 
 '''
 
-def loadImage(directory, file_name):
+def loadImage(directory, file_name, mode="BGR"):
     path = os.path.join(directory, file_name)
     try:
-        img = imread(path)
-        return img
+        img = cv2.imread(path)
+        if img is None:
+            raise Exception()
+        else:
+            if mode == "RGB":
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            return img
     except:
         print ("Error: failed to load image {}".format(file_name))
         return None
 
 def saveImage(directory, img):
     try:
-        imsave(directory, img)
+        cv2.imwrite(directory, img)
     except Exception as e:
         print (e)
         print ("Error: failed to save image at {}".format(directory))

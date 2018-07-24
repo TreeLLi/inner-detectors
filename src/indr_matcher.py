@@ -20,7 +20,7 @@ from utils.helper.data_loader import BatchLoader, getClassName
 from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
-from utils.dissection.iou import iou
+from utils.dissection.helper import iou
     
 
 '''
@@ -70,7 +70,7 @@ Match annotaions and activation maps
 
 
 def reflectAndMatch(activ_maps, field_maps, annos):
-    ref_activ_maps = reflect(activ_maps, field_maps, annos)
+    ref_activ_maps = reflect(activ_maps, field_maps)
     activ_maps = None
 
     batch_matches = matchActivsAnnos(ref_activ_maps, annos)
