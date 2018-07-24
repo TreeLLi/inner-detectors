@@ -16,7 +16,7 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import *
+from src.config import CONFIG
 from utils.model.model_agent import layerOfUnit
 from utils.dissection.upsample import upsampleL, compose_fieldmap
 from utils.dissection.helper import quantile, binarise
@@ -36,7 +36,7 @@ def reflect(activ_maps, field_maps):
         #anno_dims_activs = [resize(activ, annos[i][0][1].shape)
         #                   for i, activ in enumerate(input_dims_activs)]
 
-        quan = quantile(unit_activ_maps, 0.5, sequence=True)
+        quan = quantile(unit_activ_maps, CONFIG.DIS.QUANTILE, sequence=True)
         binarise(input_dims_activs, quan, sequence=True)
         activ_maps[unit_id] = input_dims_activs
         
