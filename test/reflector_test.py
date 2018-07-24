@@ -11,21 +11,31 @@ from utils.dissection.iou import iou, binarise
 from utils.dissection.interp_ref import *
 from utils.dissection.upsample import *
 from utils.helper.data_loader import BatchLoader
+from utils.helper.plotter import maskImage
+from utils.helper.file_manager import saveImage
 from utils.model.model_agent import ModelAgent
 from test_helper import TestBase
 
 
-bl = BatchLoader(amount=1)
-batch = bl.nextBatch()
-imgs = batch.imgs
-model_agent = ModelAgent()
-activ_maps = model_agent.getActivMaps(imgs)
-
-
 class TestInterpRef(TestBase):
-    def test_reflect(self):
-        continue
-    
+    def test_visual_reflect(self):
+        bl = BatchLoader(amount=1)
+        model = ModelAgent(input_size=1)
+        batch = bl.nextBatch()
+        imgs = batch[1]
+        annos = batch[2]
+        activ_maps = model.getActivMaps(imgs, ["conv3_1"])
+        field_maps = model.getFieldmaps()
+        reflected = reflect(activ_maps, field_maps, annos)
+        img = imgs[0]
+        saveImage(img, os.path.join(PATH.TEST.ROOT, "raw_img.jpg"))
+        for unit, ref in reflected.items():
+            ref = np.asarray(ref[0])
+            saved = np.zeros(shape=ref.shape+(3,))
+            indices = np.argwhere(ref>0)
+            saved[indices[:,0], indices[:,1]] = [255, 0, 0]
+            saveImage(saved, os.path.join(PATH.TEST.ROOT, unit+".jpg"))
+
 class TestUpsample(TestBase):
     def test_upsampleL(self):
         fieldmap = ((0,0), (1,1), (2,2))

@@ -48,7 +48,7 @@ class TestPlotter(TestBase):
         img = maskImage(img, masks, alpha=0.6)
         # cv2.imshow("test plotter", img)
         # cv2.waitKey(0)
-        saveImage(os.path.join(root_path, "test_plotter.jpg"), img)
+        saveImage(img, os.path.join(root_path, "test_plotter.jpg"))
 
 
 '''

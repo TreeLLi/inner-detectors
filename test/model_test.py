@@ -20,6 +20,7 @@ from utils.model.convnet import ConvNet
 from utils.model.model_agent import *
 from utils.model.deconvnet import *
 from utils.helper.data_loader import BatchLoader
+from utils.helper.file_manager import saveImage
 from utils.dissection.upsample import upsampled_shape
 from test_helper import TestBase
 from src.config import PATH
@@ -182,6 +183,27 @@ class TestDeConvNet(TestBase):
         layer = "pool5"
         tensor = demodel.getInputTensor(layer)
         self.assertEqual(tensor, demodel.tensors["input"])
+
+    def test_deconv_activ(self):
+        bl = BatchLoader(amount=1)
+        model = ModelAgent(input_size=1, deconv=True)
+        batch = bl.nextBatch()
+        img = batch[1]
+        activ_maps, switches = model.getActivMaps(img, ["pool5"])
+        unit = "pool5_511"
+        activ_maps = {unit : activ_maps[unit]}
+        deconv = model.getDeconvMaps(activ_maps, switches)
+        deconv = deconv[unit][0]
+        saveImage(deconv, os.path.join(PATH.TEST.ROOT, "deconv.jpg"))
+        deconv[deconv<0] = 0
+        deconv[deconv>0] = 255
+        for ri, row in enumerate(deconv):
+            for ci, col in enumerate(row):
+                if np.sum(col>0) > 0:
+                    deconv[ri][ci] = [255, 255, 255]
+                    
+        saveImage(deconv, os.path.join(PATH.TEST.ROOT, "filtered.jpg"))
+
         
 if __name__ == "__main__":
     unittest.main()
