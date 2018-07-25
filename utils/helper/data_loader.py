@@ -212,9 +212,9 @@ def preprocessAnnos(annos, mask_thresh=0.5):
         # resize it to input size for further comparison
         anno[1] = resize(anno[1], input_dim)
         binarise(anno[1])
-        if np.sum(anno[1]>0) > 10:
+        if np.sum(anno[1]>0) > CONFIG.DIS.ANNO_PIXEL_THRESHOLD:
             returned.append(anno)
-            
+        
     return returned
 
 def cropImage(img):
