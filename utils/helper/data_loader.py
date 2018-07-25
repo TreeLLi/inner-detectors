@@ -183,7 +183,7 @@ resize, crop and normalise images but not excluding means of datasets
 def preprocessImage(img, target='vgg16'):
     # normalise
     img = cropImage(img)
-    img = resize(img, (224, 224))
+    img = resize(img, CONFIG.MODEL.INPUT_DIM[:-1])
     
     return img
 
@@ -211,10 +211,9 @@ def preprocessAnnos(annos, mask_thresh=0.5):
             mask = processed[id][1]
 
     returned = []
-    input_dim = tuple(CONFIG.MODEL.INPUT_DIM[:-1])
     for anno in processed.values():
         # resize it to input size for further comparison
-        anno[1] = resize(anno[1], input_dim)
+        anno[1] = resize(anno[1], CONFIG.MODEL.INPUT_DIM[:-1])
         binarise(anno[1])
         if np.sum(anno[1]>0) > CONFIG.DIS.ANNO_PIXEL_THRESHOLD:
             returned.append(anno)

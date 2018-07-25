@@ -8,7 +8,6 @@ To provide a single unified interface to invoke models
 import os, sys
 import tensorflow as tf
 import numpy as np
-from easydict import EasyDict as edict
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
@@ -39,7 +38,6 @@ class ModelAgent:
         # initialise base model according to the given str
         self.model = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=deconv)
         self.model.build(input_size)
-        CONFIG.MODEL.INPUT_DIM = self.model.input_dim
         
         if self.deconv:
             self.demodel = DeConvNet(self.model)

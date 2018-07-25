@@ -1,8 +1,7 @@
 import scipy.io as sio
 import numpy as np
-import os, pickle
+import os
 
-from easydict import EasyDict as edict
 
 '''
 structures of annotations:

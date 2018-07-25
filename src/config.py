@@ -6,7 +6,7 @@ To provide unified configuration over the whole program
 '''
 
 import os, sys
-from easydict import EasyDict as edict
+from addict import Dict as adict
 
 _curr_path = os.path.dirname(os.path.abspath(__file__))
 _root_path = os.path.join(_curr_path, "..")
@@ -20,24 +20,21 @@ Config for program parameters
 '''
 
 
-CONFIG = edict()
+CONFIG = adict()
 
 # datasets
-CONFIG.DATA = edict()
 CONFIG.DATA.SOURCES = ['PASCAL']
 # true, generate descriptive statistics report for datasets
 CONFIG.DATA.STATISTICS = True
 
 # dissection
-CONFIG.DIS = edict()
 
 # 'fast' or 'normal'
 # fast: using stored object files to quickly generate required data
 # normal: run through normal procedures, like forward pass and reflection
 CONFIG.DIS.MODE = "fast"
 CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
-#CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
-CONFIG.DIS.REFLECT = "deconvnet"
+CONFIG.DIS.REFLECT = "interpolation" # "interpolation" or "deconvnet"
 
 CONFIG.DIS.IOU_THRESHOLD = 0.1
 CONFIG.DIS.TOP = 3
@@ -48,8 +45,7 @@ CONFIG.DIS.REPORT_TEXT = True
 CONFIG.DIS.REPORT_FIGURE = False
 
 # models
-CONFIG.MODEL = edict()
-CONFIG.MODEL.INPUT_DIM = (224, 224 ,3)
+CONFIG.MODEL.INPUT_DIM = (224, 224, 3)
 
     
 '''
@@ -58,7 +54,7 @@ Config for program paths
 '''
 
 
-PATH = edict()
+PATH = adict()
 
 _data_path = os.path.join(_root_path, "datasets")
 _pascal_path = os.path.join(_data_path, "pascal_part")
@@ -70,14 +66,13 @@ PATH.ROOT = _root_path
 
 
 # dataset path
-PATH.DATA = edict()
 PATH.DATA.ROOT = _data_path
 PATH.DATA.IMG_MAP = os.path.join(_data_path, "imgs_maps.txt")
 PATH.DATA.CLS_MAP = os.path.join(_data_path, "class_maps.txt")
 PATH.DATA.IMG_CLS_MAP = os.path.join(_data_path, "img_cls_maps.txt")
 PATH.DATA.STATISTICS = os.path.join(_data_path, "annos_statistics.txt")
 
-PATH.DATA.PASCAL = edict({
+PATH.DATA.PASCAL = adict({
     "ROOT" : _pascal_path,
     "IMGS" : os.path.join(_pascal_path, "raw_images"),
     "ANNOS" : os.path.join(_pascal_path, "part_annos")
@@ -85,7 +80,6 @@ PATH.DATA.PASCAL = edict({
 
 
 # output path
-PATH.OUT = edict()
 PATH.OUT.ROOT = os.path.join(_root_path, "output/")
 
 if CONFIG.DIS.MODEL == "VGG16":
@@ -98,9 +92,7 @@ if CONFIG.DIS.MODEL == "VGG16":
 # model path
 _model_path = os.path.join(_root_path, "pre-models")
 
-PATH.MODEL = edict()
-PATH.MODEL.ROOT = _model_path
-        
+PATH.MODEL.ROOT = _model_path        
 if CONFIG.DIS.MODEL == "VGG16":
     PATH.MODEL.PARAM = os.path.join(_model_path, "vgg16/vgg16_param.npy")
     PATH.MODEL.CONFIG = os.path.join(_model_path, "vgg16/vgg16_config.json")
@@ -109,7 +101,6 @@ if CONFIG.DIS.MODEL == "VGG16":
 
 
 # test path
-PATH.TEST = edict()
 PATH.TEST.ROOT = _test_path
     
 '''

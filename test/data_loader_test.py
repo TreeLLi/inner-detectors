@@ -1,5 +1,4 @@
 import unittest, os, sys
-from skimage.io import imsave
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -7,7 +6,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from test_helper import TestBase
-from src.config import PATH
+from src.config import PATH, CONFIG
 from utils.helper.anno_parser import parsePASCALPartAnno
 from utils.helper.file_manager import *
 from utils.helper.data_loader import *
@@ -16,7 +15,6 @@ class TestDataLoader(TestBase):
 
     def test_init(self):
         bl = BatchLoader()
-        print (bl.batch_size, bl.amount)
         
         self.assertTrue(bl.batch_size == 10)
         self.assertTrue(bl.amount == 10103)
@@ -50,9 +48,7 @@ class TestDataLoader(TestBase):
         image = loadImage(path, "2008_004198.jpg")
         processed = preprocessImage(image)
 
-        self.assertEqual(processed.shape, (224, 224, 3))
-        # out_path = os.path.join(root_path, "2008_004198.jpg")
-        # imsave(out_path, processed)
+        self.assertShape(processed, CONFIG.MODEL.INPUT_DIM)
 
     def test_preprocess_annos(self):
         anno = np.asarray([

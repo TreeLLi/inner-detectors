@@ -8,7 +8,6 @@ To match semantic concepts with hidden units in intermediate layers
 
 import os, sys
 import time, datetime
-from easydict import EasyDict as edict
 from multiprocessing import Pool
 
 curr_path = os.path.dirname(os.path.abspath(__file__))

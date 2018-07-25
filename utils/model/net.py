@@ -8,8 +8,7 @@ To define the common behaviour of network models
 
 import tensorflow as tf
 import numpy as np
-
-from easydict import EasyDict as edict
+from addict import Dict as adict
 
 from utils.helper.file_manager import loadObject
 
@@ -74,7 +73,7 @@ class Net:
         for layer_config in archi_configs:
             name = layer_config[0]
             self.layers.append(name)
-            self.configs[name] = edict(layer_config[1])
+            self.configs[name] = adict(layer_config[1])
         
     def loadParams(self):
         if not self.params:

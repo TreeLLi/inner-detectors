@@ -81,7 +81,6 @@ class TestModelAgent(TestBase):
         self.assertLength(activ_maps, 512)
         self.assertEqual(activ_maps['pool5_1'].shape, (1, 7, 7))
         self.assertLength(switches, 5)
-        print (switches['pool5'].shape)
 
     def test_layer_fieldmaps(self):
         self.log()

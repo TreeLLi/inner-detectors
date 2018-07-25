@@ -1,6 +1,5 @@
 import unittest, os, sys
 import numpy as np
-from easydict import EasyDict as edict
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
