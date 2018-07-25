@@ -25,22 +25,16 @@ class ConvNet(Net):
         print("build model started")
         self.loadParams()
 
-        rgb = tf.placeholder(tf.float32, shape=(input_size, )+self.input_dim, name="input")
-        self.tensors["input"] = rgb
-        rgb_scaled = rgb * 255.0
-        # Convert RGB to BGR
-        red, green, blue = tf.split(axis=3, num_or_size_splits=3, value=rgb_scaled)
-        assert red.get_shape().as_list()[1:] == [224, 224, 1]
-        assert green.get_shape().as_list()[1:] == [224, 224, 1]
-        assert blue.get_shape().as_list()[1:] == [224, 224, 1]
-        bgr = tf.concat(axis=3, values=[
-            blue - self.input_mean[0],
-            green - self.input_mean[1],
-            red - self.input_mean[2],
+        layer = tf.placeholder(tf.float32, shape=(input_size, )+self.input_dim, name="input")
+        self.tensors["input"] = layer
+        b, g, r = tf.split(axis=3, num_or_size_splits=3, value=layer)
+        layer = tf.concat(axis=3, values=[
+            b - self.input_mean[0],
+            g - self.input_mean[1],
+            r - self.input_mean[2],
         ])
-        assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
+        assert layer.get_shape().as_list()[1:] == [224, 224, 3]
 
-        layer = bgr        
         for name in self.layers:
             config = self.configs[name]
             layer_type = config.type

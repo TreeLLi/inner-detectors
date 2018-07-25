@@ -31,7 +31,7 @@ Test CONVNET model
 
 '''
 
-#convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
+convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
 class TestConvNet(TestBase):
     def test_init(self):
         self.log()
@@ -47,10 +47,10 @@ class TestConvNet(TestBase):
         feed_dict = convnet.createFeedDict(imgs)
         
         with tf.Session() as sess:
-            pool5 = sess.run(convnet.getTensor('pool5'), feed_dict=feed_dict)
-            self.assertEqual(pool5.shape, (10, 7, 7, 512))
-
-            
+            prob = sess.run(convnet.getTensor('prob'), feed_dict=feed_dict)
+        print (prob.shape, np.argmax(prob, axis=1))
+        
+        
 '''
 Test ModelAgent 
 
