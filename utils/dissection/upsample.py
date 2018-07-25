@@ -47,7 +47,7 @@ def upsampleC(fieldmap, activation_data, shape=None, out=None):
                 dtype=activation_data.dtype)
     for z in range(input_count):
         f = RectBivariateSpline(ay, ax, activation_data[z], kx=3, ky=3)
-        out[z] = f(iy, ix, grid=True)
+        out[z] = f(iy, ix, grid=False)
     return out
 
 def upsampleG(fieldmap, activation_data, shape=None):

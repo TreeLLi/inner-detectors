@@ -36,8 +36,9 @@ Normalisation
 
 def binarise(a, per=0, sequence=False):
     if not sequence:
-        a[a > per] = 1
-        a[a <= per] = 0
+        _a = a.copy()
+        a[_a > per] = 1
+        a[_a <= per] = 0
     else:
         for idx, _a in enumerate(a):
             _per = per[idx]

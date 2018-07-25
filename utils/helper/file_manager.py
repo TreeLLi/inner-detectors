@@ -45,9 +45,12 @@ def loadImage(directory, file_name, mode="BGR"):
         print ("Error: failed to load image {}".format(file_name))
         return None
 
-def saveImage(img, directory):
+def saveImage(img, file_path):
     try:
-        cv2.imwrite(directory, img)
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        cv2.imwrite(file_path, img)
     except Exception as e:
         print (e)
         print ("Error: failed to save image at {}".format(directory))

@@ -15,29 +15,31 @@ from utils.helper.plotter import maskImage
 from utils.helper.file_manager import saveImage
 from utils.model.model_agent import ModelAgent
 from test_helper import TestBase
+from src.config import PATH
 
 
 class TestInterpRef(TestBase):
     def test_visual_reflect(self):
         self.log()
-        bl = BatchLoader(amount=1)
+        bl = BatchLoader(amount=2)
         model = ModelAgent(input_size=1)
         batch = bl.nextBatch()
-        imgs = batch[1]
-        annos = batch[2]
-        activ_maps = model.getActivMaps(imgs, ["conv3_1"])
+        imgs = batch[1][-1:]
+        annos = batch[2][-1:]
+        activ_maps = model.getActivMaps(imgs, ["conv3_1", "conv4_1", "conv5_1"])
         field_maps = model.getFieldmaps()
-        reflected = reflect(activ_maps, field_maps, annos)
+        reflected = reflect(activ_maps, field_maps)
         img = imgs[0]
-        saveImage(img, os.path.join(PATH.TEST.ROOT, "raw_img.jpg"))
+        path = os.path.join(PATH.TEST.ROOT, "output/")
+        saveImage(img, os.path.join(path, "raw_img.jpg"))
         for unit, ref in reflected.items():
             ref = np.asarray(ref[0])
             saved = np.zeros(shape=ref.shape+(3,))
             indices = np.argwhere(ref>0)
             saved[indices[:,0], indices[:,1]] = [255, 0, 0]
-            saveImage(saved, os.path.join(PATH.TEST.ROOT, unit+".jpg"))
+            saveImage(saved, os.path.join(path, unit+".jpg"))
 
-            
+
 class TestUpsample(TestBase):
     def test_upsampleL(self):
         self.log()
@@ -72,21 +74,22 @@ class TestHelper(TestBase):
     def test_binarise(self):
         mask = np.asarray([[2,2], [-1,0]])
         binarise(mask)
-        self.assertListEqual(mask, [[1, 1], [0, 0]])
+        self.assertEqual(mask, [[1, 1], [0, 0]])
         
-        mask = np.asarray([[2,4], [-1,0]])
-        per = [3, -1]
-        binarise(mask, per)
-        self.assertListEqual(mask, [[0, 1], [0, 1]])
+        mask = np.asarray([[[2.5, 4.3], [-1.1, 0]]])
+        per = [2.2]
+        binarise(mask, per, sequence=True)
+        self.assertEqual(mask, [[[1, 1], [0, 0]]])
         
     def test_quantile(self):
-        a = [[[1,2,3], [4,5,6]]]
-        per = 50
+        a = [[1, 3], [4, 6]]
+        per = 25
         q = quantile(a, per, sequence=False)
-        self.assertEqual(q, 3.5)
-        
+        self.assertEqual(q, 2.5)
+
+        per = 50
         q = quantile(a, per, sequence=True)
-        self.assertListEqual(q, [3.5])
+        self.assertEqual(q, [2, 5])
         
 if __name__ == "__main__":
     unittest.main()
