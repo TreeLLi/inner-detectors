@@ -318,13 +318,13 @@ if __name__ == "__main__":
         elif reflect_mode == "deconvnet":
             activ_maps, switches = model.getActivMaps(images, probe_layers)
             print ("Reflecting back via DeConvNet...")
-            activ_maps = splitActivMaps(activ_maps, num)
-            params = [(amap, switches) for amap in activ_maps]
-            activ_maps = pool.starmap(model.getDeconvMaps, params)
-            #batch_match = matchActivsAnnos(activ_maps, annos)
+            # TEST - reduce running time
+            activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
+            activ_maps = model.getDeconvMaps(activ_maps, switches)
+            batch_match = matchActivsAnnos(activ_maps, annos)
             
         print ("Integrating matches results of a batch into final results ...")
-        #matches = combineMatches(matches, batch_match)
+        matches = combineMatches(matches, batch_match)
         batch_matches = None
         
         reportProgress(start, time.time(), bl.batch_id, len(images), bl.size)
