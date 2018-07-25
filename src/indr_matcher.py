@@ -80,7 +80,6 @@ def reflectAndMatch(activ_maps, field_maps, annos):
 # match activation maps of all units, of a batch of images,
 # with all annotations of corresponding images
 def matchActivsAnnos(activs, annos):
-    print ("Matching activations and annotations ...")
     matches = {}
     for unit, activs in activs.items():
         unit_matches = []
@@ -309,7 +308,7 @@ if __name__ == "__main__":
             activ_maps = model.getActivMaps(images, probe_layers)
             activ_maps = splitActivMaps(activ_maps, num)
             params = [(amap, field_maps, annos) for amap in activ_maps]
-            print ("Reflecting and matching activation maps")
+            print ("Reflecting and matching activation maps...")
             batch_matches = pool.starmap(reflectAndMatch, params)
             batch_match = {}
             for m in batch_matches:
