@@ -30,3 +30,6 @@ cleancache:
 
 cleanmaps:
 	rm -f datasets/class_maps.txt datasets/img_cls_maps.txt datasets/annos_statistics.txt
+
+cleanresults:
+	rm -f output/vgg16/*.txt output/vgg16/vgg16_concept_matches.pkl output/vgg16/vgg16_unit_matches.pkl

@@ -153,17 +153,16 @@ def reportMatchResults(matches):
     print ("Report Matches: begin...")
     iou_thres = CONFIG.DIS.IOU_THRESHOLD
     top = CONFIG.DIS.TOP
+    file_path = PATH.OUT.UNIT_MATCHES
+    saveObject(matches, file_path)
     unit_matches = filterMatches(matches, top, iou_thres)
+
     concept_matches = rearrangeMatches(matches)
+    file_path = PATH.OUT.CONCEPT_MATCHES
+    saveObject(concept_matches, file_path)
     concept_matches = filterMatches(concept_matches, top, iou_thres)
     print ("Report Matches: filtering finished.")
 
-    # save object files for further probe
-    file_path = PATH.OUT.UNIT_MATCHES
-    saveObject(unit_matches, file_path)
-    file_path = PATH.OUT.CONCEPT_MATCHES
-    saveObject(concept_matches, file_path)
-    
     if CONFIG.DIS.REPORT_TEXT:
         file_path = PATH.OUT.UNIT_MATCH_REPORT
         reportMatchesInText(unit_matches, file_path, "unit")
