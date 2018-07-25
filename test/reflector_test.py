@@ -7,7 +7,7 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from utils.dissection.iou import iou, binarise
+from utils.dissection.helper import iou, binarise
 from utils.dissection.interp_ref import *
 from utils.dissection.upsample import *
 from utils.helper.data_loader import BatchLoader
@@ -19,6 +19,7 @@ from test_helper import TestBase
 
 class TestInterpRef(TestBase):
     def test_visual_reflect(self):
+        self.log()
         bl = BatchLoader(amount=1)
         model = ModelAgent(input_size=1)
         batch = bl.nextBatch()
@@ -36,20 +37,18 @@ class TestInterpRef(TestBase):
             saved[indices[:,0], indices[:,1]] = [255, 0, 0]
             saveImage(saved, os.path.join(PATH.TEST.ROOT, unit+".jpg"))
 
+            
 class TestUpsample(TestBase):
     def test_upsampleL(self):
-        fieldmap = ((0,0), (1,1), (2,2))
+        self.log()
+        fieldmap = ((0, 0), (2, 2), (1, 1))
         activ = [
             [0,1],
             [1,0]
         ]
         activ = np.asarray([activ])
-        shape = (8, 8)
-        input = (4, 4)
-        reduc = int(round(input[0] / float(shape[0])))
-
         upsam = upsampleL(fieldmap, activ)
-        print (upsam)
+        self.assertShape(upsam, (4, 4, 1))
 
     def test_centered_arange(self):
         field_map = ((0,0), (1,1), (2,2))
@@ -60,7 +59,7 @@ class TestUpsample(TestBase):
         print (ay, ax)
         
         
-class TestIoU(TestBase):
+class TestHelper(TestBase):
 
     def test_iou(self):
         mask1 = np.asarray([[0,0,0],[0,1,0],[0,0,0]])
@@ -72,9 +71,22 @@ class TestIoU(TestBase):
 
     def test_binarise(self):
         mask = np.asarray([[2,2], [-1,0]])
-        mask = binarise(mask)
-
-        self.assertEqual(mask, [[1, 1], [0, 0]])
+        binarise(mask)
+        self.assertListEqual(mask, [[1, 1], [0, 0]])
+        
+        mask = np.asarray([[2,4], [-1,0]])
+        per = [3, -1]
+        binarise(mask, per)
+        self.assertListEqual(mask, [[0, 1], [0, 1]])
+        
+    def test_quantile(self):
+        a = [[[1,2,3], [4,5,6]]]
+        per = 50
+        q = quantile(a, per, sequence=False)
+        self.assertEqual(q, 3.5)
+        
+        q = quantile(a, per, sequence=True)
+        self.assertListEqual(q, [3.5])
         
 if __name__ == "__main__":
     unittest.main()

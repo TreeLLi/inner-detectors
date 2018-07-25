@@ -12,9 +12,7 @@ from easydict import EasyDict as edict
 import os, sys
 import numpy as np
 import time
-from skimage.transform import resize
-
-from h5py import File
+from cv2 import resize
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
@@ -24,6 +22,7 @@ if root_path not in sys.path:
 from src.config import PATH, CONFIG
 from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
+from utils.dissection.helper import binarise
 
 
 # global constants for specify the dataset sources
@@ -183,11 +182,8 @@ resize, crop and normalise images but not excluding means of datasets
 
 def preprocessImage(img, target='vgg16'):
     # normalise
-    img = img / 255.0
-    assert (img>=0).all() and (img<=1.0).all()
-
     img = cropImage(img)
-    img = resize(img, CONFIG.MODEL.INPUT_DIM)
+    img = resize(img, (224, 224))
     
     return img
 
@@ -212,7 +208,18 @@ def preprocessAnnos(annos, mask_thresh=0.5):
                 p_mask = processed[id][1]
                 p_mask += mask
                 p_mask[p_mask>1] = 1
-    return list(processed.values())
+            mask = processed[id][1]
+
+    returned = []
+    input_dim = tuple(CONFIG.MODEL.INPUT_DIM[:-1])
+    for anno in processed.values():
+        # resize it to input size for further comparison
+        anno[1] = resize(anno[1], input_dim)
+        binarise(anno[1])
+        if np.sum(anno[1]>0) > CONFIG.DIS.ANNO_PIXEL_THRESHOLD:
+            returned.append(anno)
+        
+    return returned
 
 def cropImage(img):
     # crop based on the center

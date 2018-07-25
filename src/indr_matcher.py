@@ -20,7 +20,7 @@ from utils.helper.data_loader import BatchLoader, getClassName
 from utils.helper.file_manager import saveObject, loadObject, saveImage
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
-from utils.dissection.iou import iou
+from utils.dissection.helper import iou
     
 
 '''
@@ -70,7 +70,7 @@ Match annotaions and activation maps
 
 
 def reflectAndMatch(activ_maps, field_maps, annos):
-    ref_activ_maps = reflect(activ_maps, field_maps, annos)
+    ref_activ_maps = reflect(activ_maps, field_maps)
     activ_maps = None
 
     batch_matches = matchActivsAnnos(ref_activ_maps, annos)
@@ -230,7 +230,7 @@ def reportMatchesInText(matches, file_path, form):
                 concept = getClassName(concept, full=True) if form=="unit" else concept
                 iou = match[1]
                 count = match[2]
-                match_line = "{:10} \tIoU: {:.2f} \tCount: {:2}\n".format(concept, iou, count)
+                match_line = "{:20} \tIoU: {:.2f} \tCount: {:2}\n".format(concept, iou, count)
                 f.write(match_line)
             if len(unit_matches) == 0:
                 f.write("No significant matches found.\n")
@@ -321,8 +321,6 @@ if __name__ == "__main__":
             activ_maps = splitActivMaps(activ_maps, num)
             params = [(amap, switches) for amap in activ_maps]
             activ_maps = pool.starmap(model.getDeconvMaps, params)
-            # for idx, img in enumerate(activ_maps["pool2_2"]):
-            #     saveImage(img, os.path.join(PATH.OUT.ROOT, "{}.jpg".format(idx)))
             #batch_match = matchActivsAnnos(activ_maps, annos)
             
         print ("Integrating matches results of a batch into final results ...")
