@@ -64,7 +64,7 @@ def parsePASCALPartAnno(directory, file_name, mappings, map_cls_id, update=False
             part_masks = cls[3][0]
             part_map = class_map[cls_id]
             for part in part_masks:
-                part_name = str(part[0][0])
+                part_name = str(part[0][0]).split('_')[0]
                 part_mask = part[1]
 
                 if part_name not in part_map:

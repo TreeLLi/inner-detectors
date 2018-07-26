@@ -119,7 +119,6 @@ def weightedIoU(iou_1, count_1, iou_2, count_2=1):
 
 # combine two matches results
 def combineMatches(matches, batch_matches):
-    print ("Integrating matches results of a batch into final results ...")
     if batch_matches is None:
         return matches
     elif matches is None:
