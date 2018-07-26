@@ -44,7 +44,12 @@ def binarise(a, per=0, sequence=False):
             _per = per[idx]
             binarise(_a, _per)
 
-            
+
+def binariseQuantile(a, per, sequence=False):
+    quan = quantile(a, per, sequence)
+    binarise(a, quan, sequence)
+    
+
 '''
 Quantile
 
