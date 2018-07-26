@@ -7,7 +7,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from utils.dissection.helper import iou, binarise
-from utils.dissection.interp_ref import *
+from utils.dissection.activ_processor import *
 from utils.dissection.upsample import *
 from utils.helper.data_loader import BatchLoader
 from utils.helper.plotter import maskImage

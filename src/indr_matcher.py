@@ -287,9 +287,9 @@ if __name__ == "__main__":
     reflect_mode = CONFIG.DIS.REFLECT
     
     if reflect_mode == "interpolation":
-        from utils.dissection.interp_ref import reflect
+        from utils.dissection.activ_processor import reflect
         model = ModelAgent()
-        field_maps = model.getFieldmaps()    
+        field_maps = model.getFieldmaps()
     elif reflect_mode == "deconvnet":
         model = ModelAgent(deconv=True)
 
