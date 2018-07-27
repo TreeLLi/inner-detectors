@@ -6,6 +6,9 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
+from test_helper import TestBase
+from src.config import PATH
+    
 from utils.dissection.helper import iou, binarise
 from utils.dissection.activ_processor import *
 from utils.dissection.upsample import *
@@ -13,11 +16,15 @@ from utils.helper.data_loader import BatchLoader
 from utils.helper.plotter import maskImage
 from utils.helper.file_manager import saveImage
 from utils.model.model_agent import ModelAgent
-from test_helper import TestBase
-from src.config import PATH
 
 
-class TestInterpRef(TestBase):
+'''
+Test Suits
+
+'''
+
+
+class TestActivProcessor(TestBase):
     def test_visual_reflect(self):
         self.log()
         bl = BatchLoader(amount=2)
@@ -38,6 +45,17 @@ class TestInterpRef(TestBase):
             saved[indices[:,0], indices[:,1]] = [255, 0, 0]
             saveImage(saved, os.path.join(path, unit+".jpg"))
 
+    def test_activ_attrs(self):
+        activ_maps = {
+            "pool5_1" : [
+                [[2, 2], [2.5, 1.5]],
+                [[2, 2], [4, 4]]
+            ],
+            "pool5_2" : [[0, 0], [-1, 2]]
+        }
+        attrs = activAttrs(activ_maps)
+        self.assertEqual(attrs["pool5_1"], [[2], [3]])
+        self.assertEqual(attrs["pool5_2"], [[0.0], [0.5]])
 
 class TestUpsample(TestBase):
     def test_upsampleL(self):

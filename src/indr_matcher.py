@@ -15,7 +15,7 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from utils.helper.data_loader import BatchLoader, getClassName
+from utils.helper.data_loader import BatchLoader, getClassName, weightedVal
 from utils.helper.file_manager import saveObject, loadObject, saveImage
 from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
@@ -106,16 +106,10 @@ def matchActivAnnos(activ, annos):
             iou_1 = matches[concept][0]
             count_1 = matches[concept][1]
             iou_2 = iou(activ, mask)
-            matches[concept][0] = weightedIoU(iou_1, count_1, iou_2)
+            matches[concept][0] = weightedVal(iou_1, count_1, iou_2)
             matches[concept][1] += 1
 
     return matches
-
-
-# calculate count-weighted IoU
-def weightedIoU(iou_1, count_1, iou_2, count_2=1):
-    return (iou_1*count_1 + iou_2*count_2) / (count_1+count_2)
-
 
 # combine two matches results
 def combineMatches(matches, batch_matches):

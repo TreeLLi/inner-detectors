@@ -40,3 +40,19 @@ def reflect(activ_maps, field_maps):
         activ_maps[unit_id] = input_dims_activs
         
     return activ_maps
+
+
+'''
+Activation Attributes
+
+'''
+
+
+def activAttrs(activ_maps):
+    attrs = {}
+    for unit_id, unit_activs in activ_maps.items():
+        # attribute 0 - mean of activation values
+        attrs[unit_id] = [[np.mean(activ)] for activ in unit_activs]
+        # TODO - measure more attrs of activation
+        
+    return attrs

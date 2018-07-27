@@ -87,6 +87,18 @@ def getClassName(cls_id, mapping=class_map, full=False):
             name = mapping[0] if isinstance(mapping, list) else mapping
     return name
 
+def getClassNames(cls_ids, mapping=class_map, full=False):
+    names = []
+    cache = {}
+    for cls_id in cls_ids:
+        cls_id = cls_id[0] if isinstance(cls_id, list) else cls_id
+        if cls_id in cache:
+            names.append(cache[cls_id])
+        name = getClassName(cls_id, mapping, full)
+        names.append(name)
+        cache[cls_id] = name
+    return names
+
 def sortAsClass(mapping):
     sorted = []
     for cls in class_map:

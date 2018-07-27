@@ -41,36 +41,6 @@ class TestDataLoader(TestBase):
     def test_fetch_data_from_pascal(self):
         img_id = self.getImageId()
         img, annos = fetchDataFromPASCAL(img_id)
-        
-        
-    def test_preprocess_image(self):
-        path = PATH.DATA.PASCAL.IMGS
-        image = loadImage(path, "2008_004198.jpg")
-        processed = preprocessImage(image)
-
-        self.assertShape(processed, CONFIG.MODEL.INPUT_DIM)
-
-    def test_preprocess_annos(self):
-        anno = np.asarray([
-            [0,0,1,1],
-            [1,1,0,0]
-        ])
-        anno = [1, anno]
-        annos = [anno]
-        annos = preprocessAnnos(annos)
-        self.assertListEqual(annos[0][1], [[0,1],[1,0]])
-
-        annos[0][1] = np.asarray([
-            [0,0,1,1,1,1,1,1,1,1],
-            [1,1,0,0,1,1,1,1,1,1]
-        ])
-        annos = preprocessAnnos(annos)
-        self.assertEmpty(annos)
-
-        anno = np.asarray([[0,0],[1,1]])
-        annos.append([1, anno])
-        annos = preprocessAnnos(annos, 0)
-        self.assertLength(annos, 1)
 
     def test_get_class_id(self):
         mapping = [None, ["person", "leg"]]

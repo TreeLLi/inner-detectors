@@ -7,8 +7,8 @@ To pre-process loaded data, including images and annotations
 
 
 import os, sys
-from cv2 import resize
 import numpy as np
+from cv2 import resize
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
@@ -73,3 +73,22 @@ def cropImage(img):
     crop_x = int((img.shape[1] - short_edge) / 2)
     crop_img = img[crop_y:crop_y+short_edge, crop_x:crop_x+short_edge]
     return crop_img
+
+
+'''
+Patch
+
+'''
+
+def patch(imgs, annos, mode='mask'):
+    data = [[], []]
+    for img, anno in zip(imgs, annos):
+        for aid, mask in anno:
+            patched = img.copy()
+            if mode == 'mask':
+                # only patch the annotation mask part
+                patched[mask>0] = [0, 0, 0]
+                data[0].append(patched)
+            data[1].append([aid])
+    data[0] = np.asarray(data[0])
+    return data
