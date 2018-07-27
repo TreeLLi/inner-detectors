@@ -1,3 +1,6 @@
+# root
+std_out.txt
+
 # datasets
 broden1_227
 pascal_part
@@ -9,8 +12,9 @@ pre-models
 # output
 output/
 
+# test
+# ignore all sub-folders
+test/*/*
+
 # python cache
 __pycache__
-
-# source backup
-*.back

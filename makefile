@@ -2,6 +2,13 @@
 match:
 	python -W ignore 'src/indr_matcher.py'
 
+verify:
+ifdef record
+	python -W ignore 'src/verifier.py' > 'std_out.txt'
+else
+	python -W ignore 'src/verifier.py'
+endif
+
 # preparation
 data:
 	python -W ignore 'datasets/prepare_datasets.py'
@@ -10,14 +17,20 @@ data:
 testloader:
 	python -W ignore 'test/data_loader_test.py' $(m)
 
+testdprocessor:
+	python -W ignore 'test/data_process_test.py' $(m)
+
 testconfig:
 	python -W ignore 'test/config_test.py' $(m)
 
-testreflector:
-	python -W ignore 'test/reflector_test.py' $(m)
+testaprocessor:
+	python -W ignore 'test/activ_process_test.py' $(m)
 
 testmatcher:
 	python -W ignore 'test/matcher_test.py' $(m)
+
+testverifier:
+	python -W ignore 'test/verifier_test.py' $(m)
 
 testmodel:
 	python -W ignore 'test/model_test.py' $(m)
