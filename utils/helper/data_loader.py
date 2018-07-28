@@ -274,11 +274,16 @@ class BatchLoader(object):
                 s_source = sample[1]
                 s_id = sample[2]
                 if self.mode == "classes":
+                    # mode 'classes': check if adding this sample
+                    # will destroy balance of classes distribution
                     classes = getImageClasses(s_id)
                     remgs = [self.cls_counts[cls]-1 for cls in classes]
                     if any(c < -1 for c in remgs):
+                        # sample causing imbalance classes distribution
+                        # ignore it and load one more
                         num += 1
                         if self.backup:
+                            # if backup data exists, move one to supply
                             self.data.append(self.backup[0])
                             self.backup = self.backup[1:]
                         continue
@@ -304,7 +309,8 @@ class BatchLoader(object):
                         for cls in classes:
                             self.cls_counts[cls] -= 1
                         if all(c <= 0 for c in self.cls_counts.values()):
-                            # finished
+                            # finished, exist batch loading,
+                            # ignore remaining data
                             self.data = []
                             num = 0
                             break
