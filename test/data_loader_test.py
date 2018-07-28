@@ -125,7 +125,7 @@ class TestFileManager(TestBase):
         
     def test_save_load_json(self):
         path = os.path.join(PATH.TEST.ROOT, "save_load_json.json")
-        test = {"1" : 2, 2:1}
+        test = {"1" : 2, "2" : 1}
         saveObject(test, path)
         loaded = loadObject(path)
         os.remove(path)
