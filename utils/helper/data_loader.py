@@ -12,20 +12,30 @@ import os, sys
 import numpy as np
 import time
 
+from os.path import exists
+
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import PATH, CONFIG
+from src.config import PATH, CONFIG, isPASCAL
 from utils.helper.data_processor import preprocessImage, preprocessAnnos
 from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
 
 
-# global constants for specify the dataset sources
-PASCAL = "PASCAL"
-SOURCE = [PASCAL]
+'''
+Global variable
+
+'''
+
+
+path = PATH.DATA.CLS_MAP
+class_map = loadObject(path) if exists(path) else []
+
+path = PATH.DATA.IMG_CLS_MAP
+img_cls_map = loadObject(path) if exists(path) else []
 
 
 '''
@@ -33,35 +43,21 @@ Data Mapping
 
 '''
 
-UPDATE_MAPS = False
-if os.path.exists(PATH.DATA.CLS_MAP):
-    class_map = loadObject(PATH.DATA.CLS_MAP)
-else:
-    class_map = []
-    UPDATE_MAPS = True
-
-if os.path.exists(PATH.DATA.IMG_CLS_MAP):
-    img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
-else:
-    img_cls_map = []
-    UPDATE_MAPS = True
-
-
-def getClassId(cls, mapping=class_map, indices=None):
+def getClassID(cls, mapping=class_map, indices=None):
     try:
         indices.append(mapping.index(cls))
-        return mapClassId(indices)
+        return mapClassID(indices)
     except:
         if isinstance(mapping, list):
             for idx, m in enumerate(mapping):
-                ind = [idx] if indices is None else indices + [idx]
-                id = getClassId(cls, m, ind)
+                _indices = [idx] if indices is None else indices + [idx]
+                id = getClassID(cls, m, _indices)
                 if id is not None:
                     return id
         else:
             return None
 
-def mapClassId(map_indices):
+def mapClassID(map_indices):
     id = map_indices[0]
     for idx, val in enumerate(map_indices[1:]):
         id += val*1000 if idx == 0 else val*1000*(100**idx)
@@ -99,6 +95,28 @@ def getClassNames(cls_ids, mapping=class_map, full=False):
         cache[cls_id] = name
     return names
 
+def getClasses(order=0, mapping=class_map, indices=None):
+    classes = []
+    for idx, cls in enumerate(mapping):
+        if idx == 0 or cls is None:
+            # skip first element in each order, it is non-sense
+            # or belonging to parent order
+            continue
+        if order != 0:
+            if isinstance(cls, list):
+                _order = order-1
+                _indices = [idx] if indices is None else indices + [idx]
+                _classes = getClasses(_order, cls, _indices)
+                if _classes:
+                    classes += _classes
+            else:
+                continue
+        else:
+            _indices = [idx] if indices is None else indices + [idx]
+            cls_id = mapClassID(_indices)
+            classes.append(cls_id)
+    return classes
+
 def sortAsClass(mapping):
     sorted = []
     for cls in class_map:
@@ -107,16 +125,27 @@ def sortAsClass(mapping):
         
         if isinstance(cls, list):
            for sub_cls in cls:
-               cls_id = getClassId(sub_cls)
+               cls_id = getClassID(sub_cls)
                if cls_id in mapping:
                    sorted.append([sub_cls] + mapping[cls_id])
         else:
-            cls_id = getClassId(cls)
+            cls_id = getClassID(cls)
             if cls_id in mapping:
                 sorted.append([cls] + mapping[cls_id])
     return sorted
 
-
+def getImageClasses(img_id):
+    if isinstance(img_id, int):
+        return img_cls_map[img_id][1:]
+    elif isinstance(img_id, str):
+        for img_cls in img_cls_map:
+            if img_cls[0] != img_id:
+                continue
+            return img_cls[1:]
+        raise Exception("Error: can not find image {}".format(img_id))
+    else:
+        raise Exception("Error: invalid image identifier.")
+        
 '''
 Data Description
 
@@ -178,7 +207,9 @@ def fetchDataFromPASCAL(img_id):
     file_name = img_id + postfix
     directory = PATH.DATA.PASCAL.ANNOS
     mappings = [class_map, img_cls_map]
-    annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId, UPDATE_MAPS)
+    # if img_cls_map exists, then ignore updating in parsing function
+    mappings[1] = None if mappings[1] else mappings[1]
+    annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassID)
     
     return img, annos
     
@@ -190,18 +221,26 @@ Load data as batches
 
 class BatchLoader(object):
 
-    def __init__(self, sources=[PASCAL], target='VGG16', batch_size=10, amount=None):
+    def __init__(self, sources=["PASCAL"], batch_size=10, amount=None, mode=None):
         self.batch_size = batch_size
-        self.target = target
-        
-        self.data = loadObject(PATH.DATA.IMG_MAP)
-        if amount is not None and len(self.data) > amount:
-            # discard remaining datasets, since the specified amount is reached
-            self.data = self.data[:amount]
 
-        self.amount = amount if amount is not None else len(self.data)
+        self.dataset = loadObject(PATH.DATA.IMG_MAP)
+        if amount is not None and len(self.dataset) > amount:
+            # discard remaining datasets, since the specified amount is reached
+            self.data = self.dataset[:amount]
+            self.backup = self.dataset[amount:]
+        else:
+            self.data = self.dataset.copy()
+            self.backup = None
+            
+        self.amount = len(self.data)
         self.batch_id = 0
-        self.sample_id = 0
+
+        self.mode = mode
+        if mode == "classes":
+            classes = getClasses()
+            num = self.amount // len(classes) + 1
+            self.cls_counts = {cls : num for cls in classes}
         
     def __bool__(self):
         finished = self.size <= 0
@@ -233,24 +272,43 @@ class BatchLoader(object):
             for sample in samples:
                 s_name = sample[0]
                 s_source = sample[1]
-                if s_source == PASCAL:
+                s_id = sample[2]
+                if self.mode == "classes":
+                    classes = getImageClasses(s_id)
+                    remgs = [self.cls_counts[cls]-1 for cls in classes]
+                    if any(c < -1 for c in remgs):
+                        num += 1
+                        if self.backup:
+                            self.data.append(self.backup[0])
+                            self.backup = self.backup[1:]
+                        continue
+                
+                if isPASCAL(s_source):
                     img, annos = fetchDataFromPASCAL(s_name)
                     
-                img = preprocessImage(img, self.target)
+                img = preprocessImage(img)
                 annos = preprocessAnnos(annos)
                 if len(annos) == 0:
                     # skip the sample without any annotation
                     # increase counter 'num' to load images in next loop
                     num += 1
                 else:
-                    batch[0].append(self.sample_id)
-                    self.sample_id += 1
+                    batch[0].append(s_id)
                     batch[1].append(img)
                     batch[2].append(annos)
 
                     if DESCRIBE_DATA:
                         describeData(annos, des)
-
+                        
+                    if self.mode == "classes":
+                        for cls in classes:
+                            self.cls_counts[cls] -= 1
+                        if all(c <= 0 for c in self.cls_counts.values()):
+                            # finished
+                            self.data = []
+                            num = 0
+                            break
+                        
         batch[1] = np.asarray(batch[1])
         self.reportProgress(len(batch[1]), start)
         return batch
@@ -271,8 +329,12 @@ class BatchLoader(object):
         print (report)
 
     def finish(self):
-        print ("save class_map and img_cls_map")
-        saveObject(class_map, PATH.DATA.CLS_MAP)
-        saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
+        if not exists(PATH.DATA.CLS_MAP):
+            print ("Class map: saved.")
+            saveObject(class_map, PATH.DATA.CLS_MAP)
+        if not exists(PATH.DATA.IMG_CLS_MAP):
+            print ("Image class map: saved")
+            saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
         if DESCRIBE_DATA:
+            print ("Data statistics: saved")
             saveObject(sortAsClass(des), PATH.DATA.STATISTICS)

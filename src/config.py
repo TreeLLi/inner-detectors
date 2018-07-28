@@ -67,7 +67,7 @@ PATH.ROOT = _root_path
 
 # dataset path
 PATH.DATA.ROOT = _data_path
-PATH.DATA.IMG_MAP = os.path.join(_data_path, "imgs_maps.txt")
+PATH.DATA.IMG_MAP = os.path.join(_data_path, "img_ids.txt")
 PATH.DATA.CLS_MAP = os.path.join(_data_path, "class_maps.txt")
 PATH.DATA.IMG_CLS_MAP = os.path.join(_data_path, "img_cls_maps.txt")
 PATH.DATA.STATISTICS = os.path.join(_data_path, "annos_statistics.txt")

@@ -105,9 +105,14 @@ def loadListFromText(file_path):
     try:
         with open(file_path, 'r') as f:
             lines = f.readlines()
-            lines = [line.rstrip("\n\t") for line in lines]
-            lines = [line.split(',') for line in lines]
-            lines = [line[0] if len(line)==1 else line for line in lines]
+            for idx, line in enumerate(lines):
+                line = line.rstrip("\n\t")
+                splited = line.split(',')
+                for _idx, e in enumerate(splited):
+                    if e.isdigit():
+                        splited[_idx] = int(e)
+                splited = splited[0] if len(splited) == 1 else splited
+                lines[idx] = splited
             return lines
     except Exception as e:
         print ("Error: failed to load text file {}".format(file_path))

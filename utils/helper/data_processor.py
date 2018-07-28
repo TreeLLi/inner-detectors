@@ -26,8 +26,7 @@ resize, crop and normalise images but not excluding means of datasets
 
 '''
 
-def preprocessImage(img, target='vgg16'):
-    # normalise
+def preprocessImage(img):
     img = cropImage(img)
     img = resize(img, CONFIG.MODEL.INPUT_DIM[:-1])
     
@@ -54,7 +53,6 @@ def preprocessAnnos(annos, mask_thresh=0.5):
                 p_mask = processed[id][1]
                 p_mask += mask
                 p_mask[p_mask>1] = 1
-            mask = processed[id][1]
 
     returned = []
     for anno in processed.values():

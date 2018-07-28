@@ -132,7 +132,7 @@ def combineMatches(matches, batch_matches):
                     count_1 = cct_match[1]
                     iou_2 = unit_match[concept][0]
                     count_2 = unit_match[concept][1]
-                    unit_match[concept][0] = weightedIoU(iou_1, count_1, iou_2, count_2)
+                    unit_match[concept][0] = weightedVal(iou_1, count_1, iou_2, count_2)
                     unit_match[concept][1] += count_1
     return matches
 

@@ -12,31 +12,28 @@ from utils.helper.file_manager import *
 from utils.helper.data_loader import *
 
 class TestDataLoader(TestBase):
-
-    def test_init(self):
-        bl = BatchLoader()
-        
-        self.assertTrue(bl.batch_size == 10)
-        self.assertTrue(bl.amount == 10103)
-        self.assertTrue(bl.data)
-        
     def test_bool(self):
-        bl = BatchLoader(sources=[PASCAL])
+        bl = BatchLoader()
         self.assertTrue(bool(bl))
     
     def test_size(self):
-        bl = BatchLoader(sources=[PASCAL], amount=10)
-        self.assertTrue(bl.size == 10)
+        bl = BatchLoader(amount=10)
+        self.assertEqual(bl.size, 10)
         
     def test_next(self):
-        amount = None
-        batch_size = 10
-        bl = BatchLoader(batch_size=batch_size, amount=amount)
-        self.assertEqual(bl.size, 10103)
-        
+        bl = BatchLoader()
         batch = bl.nextBatch()
-        self.assertNotEmpty(batch)
         self.assertShape(batch[1], (10, 224, 224, 3))
+
+        bl = BatchLoader(amount=10, mode="classes")
+        batch = bl.nextBatch()
+        self.assertLength(batch[1], 10)
+        self.assertLength(bl.backup, len(bl.dataset)-12)
+        
+        bl = BatchLoader(mode="classes")
+        batch = bl.nextBatch()
+        self.assertLength(batch[1], 10)
+        self.assertIsNone(bl.backup)
         
     def test_fetch_data_from_pascal(self):
         img_id = self.getImageId()
@@ -45,19 +42,39 @@ class TestDataLoader(TestBase):
     def test_get_class_id(self):
         mapping = [None, ["person", "leg"]]
         cls = "leg"
-        id = getClassId(cls, mapping)
+        id = getClassID(cls, mapping)
         self.assertEqual(id, 1001)
 
     def test_get_class_name(self):
         mapping = [None, None, None, ["person", ["head", "eye"]]]
         cls = "eye"
-        id = getClassId(cls, mapping)
+        id = getClassID(cls, mapping)
         print (id)
         mapped = getClassName(id, mapping)
         self.assertEqual(cls, mapped)
 
         name = getClassName(id, mapping, True)
         self.assertEqual(name, "person/head/eye")
+
+    def test_get_classes(self):
+        classes = getClasses(0)
+        print ("order 0: ", classes)
+        self.assertEqual(classes[0], 1)
+        self.assertEqual(classes[19], 20)
+
+        classes = getClasses(1)
+        print ("order 1: ", classes)
+        self.assertEqual(classes[0], 1001)
+        self.assertEqual(classes[1], 2001)
+
+    def test_get_img_classes(self):
+        img_id = 0
+        classes = getImageClasses(img_id)
+        self.assertEqual(classes, [20])
+
+        img_id = "2008_000003"
+        classes = getImageClasses(img_id)
+        self.assertEqual(classes, [19, 15])
         
     def test_des_data(self):
         annos = np.asarray([[0,1], [1,0]])
@@ -111,7 +128,7 @@ class TestAnnoParser(TestBase):
 
         mappings = [[], []]
         
-        annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassId)
+        annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassID)
         
 if __name__ == "__main__":
     unittest.main()
