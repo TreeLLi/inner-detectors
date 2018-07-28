@@ -11,10 +11,11 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from test_helper import TestBase
-
 from src.config import PATH
+
 from utils.helper.data_processor import *
-from utils.helper.data_loader import BatchLoader, getClassNames
+from utils.helper.data_loader import BatchLoader
+from utils.helper.data_mapper import getClassNames
 from utils.helper.file_manager import saveImage
 
 
@@ -22,7 +23,6 @@ from utils.helper.file_manager import saveImage
 Test Suits
 
 '''
-
 
 class TestDataProcessor(TestBase):
     

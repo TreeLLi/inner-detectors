@@ -10,8 +10,16 @@ from src.config import PATH, CONFIG
 from utils.helper.anno_parser import parsePASCALPartAnno
 from utils.helper.file_manager import *
 from utils.helper.data_loader import *
+from utils.helper.data_mapper import *
+
+
+'''
+Test Suits
+
+'''
 
 class TestDataLoader(TestBase):
+    
     def test_bool(self):
         bl = BatchLoader()
         self.assertTrue(bool(bl))
@@ -38,7 +46,29 @@ class TestDataLoader(TestBase):
     def test_fetch_data_from_pascal(self):
         img_id = self.getImageId()
         img, annos = fetchDataFromPASCAL(img_id)
+        
+    def test_des_data(self):
+        annos = np.asarray([[0,1], [1,0]])
+        annos = [[1, annos], [1, annos], [2, annos]]
+        annos[1][1] = np.asarray([
+            [0, 0, 1, 1],
+            [1, 1, 1, 0],
+            [2, 3, 1, 1],
+            [0, 0, 0, 0]
+        ])
+        des = describeData(annos, {})
+        self.assertLength(des, 2)
+        self.assertEqual(des[2], [1, 1, 1, 1, 1, 1, 1, 2])
+        self.assertEqual(des[1], [2, 1.5, 2.5, 2, 1.5, 2, 1.625, 5.5])
 
+    def test_finish(self):
+        bl = BatchLoader(amount=10)
+        batch = bl.nextBatch()
+        bl.finish()
+
+        
+class TestDataMapper(TestBase):
+    
     def test_get_class_id(self):
         mapping = [None, ["person", "leg"]]
         cls = "leg"
@@ -76,24 +106,6 @@ class TestDataLoader(TestBase):
         classes = getImageClasses(img_id)
         self.assertEqual(classes, [19, 15])
         
-    def test_des_data(self):
-        annos = np.asarray([[0,1], [1,0]])
-        annos = [[1, annos], [1, annos], [2, annos]]
-        annos[1][1] = np.asarray([
-            [0, 0, 1, 1],
-            [1, 1, 1, 0],
-            [2, 3, 1, 1],
-            [0, 0, 0, 0]
-        ])
-        des = describeData(annos, {})
-        self.assertLength(des, 2)
-        self.assertEqual(des[2], [1, 1, 1, 1, 1, 1, 1, 2])
-        self.assertEqual(des[1], [2, 1.5, 2.5, 2, 1.5, 2, 1.625, 5.5])
-
-    def test_finish(self):
-        bl = BatchLoader(amount=10)
-        batch = bl.nextBatch()
-        bl.finish()
         
 class TestFileManager(TestBase):
 

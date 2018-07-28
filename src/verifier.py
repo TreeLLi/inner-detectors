@@ -17,7 +17,8 @@ if root_path not in sys.path:
 
 from src.config import PATH
     
-from utils.helper.data_loader import BatchLoader, getClassName, weightedVal
+from utils.helper.data_loader import BatchLoader, weightedVal
+from utils.helper.data_mapper import getClassName
 from utils.helper.data_processor import patch
 from utils.helper.file_manager import saveObject, loadObject
 from utils.dissection.activ_processor import activAttrs

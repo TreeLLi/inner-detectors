@@ -15,12 +15,14 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from utils.helper.data_loader import BatchLoader, getClassName, weightedVal
-from utils.helper.file_manager import saveObject, loadObject, saveImage
-from utils.model.model_agent import ModelAgent
 from src.config import CONFIG, PATH, isModeFast
+
+from utils.helper.data_loader import BatchLoader, weightedVal
+from utils.helper.data_mapper import getClassName
+from utils.helper.file_manager import saveObject, loadObject
+from utils.model.model_agent import ModelAgent
 from utils.dissection.helper import iou
-    
+
 
 '''
 Fast Mode Functions
@@ -66,7 +68,6 @@ def saveRefActivMaps(ref_activ_maps, names):
 Match annotaions and activation maps
 
 '''
-
 
 def reflectAndMatch(activ_maps, field_maps, annos):
     ref_activ_maps = reflect(activ_maps, field_maps)

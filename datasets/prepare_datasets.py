@@ -20,7 +20,7 @@ if root_path not in sys.path:
 from src.config import CONFIG, PATH, isPASCAL
 from utils.helper.file_manager import loadObject, saveObject, getFilesInDirectory
 from utils.helper.anno_parser import parsePASCALPartAnno
-from utils.helper.data_loader import mapClassID
+from utils.helper.data_mapper import mapClassID
 
 
 '''
@@ -33,7 +33,7 @@ def downloadDatasets(sources):
 
 
 '''
-Images id mapping
+Images ID, Classes Mapping
 
 '''
 
@@ -52,6 +52,11 @@ def mapDatasets(sources):
     path = PATH.DATA.IMG_CLS_MAP
     mappings[1] = None if (exists(path) and loadObject(path)) else []
 
+    if all(m != [] for m in mappings):
+        # all mapping exists,
+        # stop following mapping procedures
+        return None
+    
     amount = len(img_ids)
     start = time.time()
     for idx, img_id in enumerate(img_ids):
@@ -81,7 +86,6 @@ def mapDatasets(sources):
 Map image id
 
 '''
-
 
 def mapImageID(sources):
     maps = []
@@ -113,6 +117,6 @@ if __name__=='__main__':
     downloadDatasets(sources)
     print ("Datasets preparation: download finished")
     print ("Datasets preparation: mapping images ...")
-    maps = mapDatasets(sources)
+    mapDatasets(sources)
     print ("Datasets preparation: mapping finished")
     
