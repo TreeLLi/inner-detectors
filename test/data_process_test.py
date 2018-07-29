@@ -17,6 +17,7 @@ from utils.helper.data_processor import *
 from utils.helper.data_loader import BatchLoader
 from utils.helper.data_mapper import getClassNames
 from utils.helper.file_manager import saveImage
+from utils.helper.dstruct_helper import *
 
 
 '''
@@ -75,5 +76,17 @@ class TestDataProcessor(TestBase):
             file_path = os.path.join(path, file_name)
             saveImage(img, file_path)
 
+
+class TestDstructHelper(TestBase):
+    def test_sort_dict(self):
+        self.log()
+
+    def test_split_dict(self):
+        self.log()
+
+    def test_reverse_dict(self):
+        self.log()
+            
+            
 if __name__ == "__main__":
     unittest.main()
