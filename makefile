@@ -2,6 +2,9 @@
 match:
 	python -W ignore 'src/indr_matcher.py'
 
+activthres:
+	python -W ignore 'src/activ_thres.py'
+
 verify:
 ifdef record
 	python -W ignore 'src/verifier.py' > 'std_out.txt'

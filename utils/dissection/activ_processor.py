@@ -27,26 +27,25 @@ Activation maps reflection
 
 '''
 
-
-def reflect(activ_maps, field_maps):
+def reflect(activ_maps, field_maps, quan=CONFIG.DIS.QUANTILE):
+    reflected = {}
     for unit_id, unit_activ_maps in activ_maps.items():
         layer, _ = splitUnitID(unit_id)
         field_map = field_maps[layer]
         # scale activation maps to model input dimensions
         input_dims_activs = upsampleL(field_map, unit_activ_maps)
 
-        quan = quantile(unit_activ_maps, CONFIG.DIS.QUANTILE, sequence=True)
-        binarise(input_dims_activs, quan, sequence=True)
-        activ_maps[unit_id] = input_dims_activs
+        quans = quantile(unit_activ_maps, quan, sequence=True)
+        binarise(input_dims_activs, quans, sequence=True)
+        reflected[unit_id] = input_dims_activs
         
-    return activ_maps
+    return reflected
 
 
 '''
 Activation Attributes
 
 '''
-
 
 def activAttrs(activ_maps):
     attrs = {}
