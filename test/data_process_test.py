@@ -80,13 +80,92 @@ class TestDataProcessor(TestBase):
 class TestDstructHelper(TestBase):
     def test_sort_dict(self):
         self.log()
+        dic = {
+            2 : 1,
+            3 : 2,
+            1 : 3,
+            4 : 4
+        }
+        sort = sortDict(dic, by_key=False, descending=True)
+        self.assertEqual(sort, [(4,4), (1,3), (3,2), (2,1)])
+        
+        sort = sortDict(dic, by_key=True, descending=True)
+        self.assertEqual(sort, [(4,4), (3,2), (2,1), (1,3)])
 
     def test_split_dict(self):
         self.log()
+        dic = {
+            1 : 1,
+            2 : 2,
+            3 : 3,
+            4 : 4
+        }
 
+        splited = splitDict(dic, 4)
+        self.assertLength(splited, 4)
+        self.assertLength(splited[-1], 1)
+
+        splited = splitDict(dic, 3)
+        self.assertLength(splited, 3)
+        amount = sum([len(x) for x in splited])
+        self.assertEqual(amount, 4)
+
+    def test_split_list(self):
+        self.log()
+        lis = [1, 2, 3, 4]
+        
+        split = splitList(lis, 4)
+        self.assertLength(split, 4)
+        self.assertLength(split[-1], 1)
+
+        split = splitList(lis, 3)
+        self.assertLength(split, 3)
+        amount = sum([len(x) for x in split])
+        self.assertEqual(amount, 4)
+        
     def test_reverse_dict(self):
         self.log()
+        dic = {
+            1 : {
+                'a' : 1,
+                'b' : 1,
+            },
+            2 : {
+                'a' : 2,
+                'c' : 2
+            }
+        }
+
+        rever = {
+            'a' : {
+                1 : 1,
+                2 : 2
+            },
+            'b' : {1 : 1},
+            'c' : {2 : 2}
+        }
+
+        returned = reverseDict(dic)
+        self.assertEqual(returned, rever)
+        
+    def test_nest_iter(self):
+        self.log()
+        dic = {
+            1 : {
+                1.1 : 1.1,
+                1.2 : 1
+            },
+            2 : {
+                2.1 : 2,
+                2.2 : 2
+            }
+        }
+        sums = []
+        for k_1, k_2, val in nested(dic):
+            sums.append(k_1 + k_2 + val)
             
+        self.assertEqual(sums, [3.2, 3.2, 6.1, 6.2])
+        
             
 if __name__ == "__main__":
     unittest.main()

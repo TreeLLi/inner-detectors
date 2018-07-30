@@ -5,7 +5,10 @@ To provide auxiliary functions easily handling data structures
 
 '''
 
-from oeprator import itemgetter
+
+import numpy as np
+from operator import itemgetter
+from collections import Iterator
 
 
 '''
@@ -14,11 +17,11 @@ Sorting
 '''
 
 # result is returned as a list of tuples (key, val)
-def sortDict(dic, by_key=False, desending=True):
+def sortDict(dic, by_key=False, descending=True):
     # sorted by dictionary values
     key = 0 if by_key else 1
-    sorted = sorted(dic.items(), key=itemgetter(key), reverse=descending)
-    return sorted
+    sort = sorted(dic.items(), key=itemgetter(key), reverse=descending)
+    return sort
 
 
 '''
@@ -28,6 +31,12 @@ Reverse
 
 def reverseDict(dic):
     rever = {}
+    for key_1, key_2, val in nested(dic):
+        if key_2 not in rever:
+            rever[key_2] = {key_1 : val}
+        else:
+            rever[key_2][key_1] = val
+    
     return rever
 
 
@@ -46,6 +55,14 @@ def splitDict(dic, num):
         split.append({key : dic[key] for key in sub_keys})
     return split
 
+def splitList(lis, num):
+    distri = splitNumber(len(lis), num)
+    split = []
+    for size in distri:
+        split.append(lis[:size])
+        lis = lis[size:]
+    return split
+
 def splitNumber(num, amount):
     base = num // amount
     left = num % amount
@@ -60,39 +77,59 @@ Iteration
 '''
 
 def nested(nest):
-    if isinstance(nest, dict):
-        # parse dict to adapt format of iterator
-        continue
-    else:
-        continue
-        
+    return NestedIterator(nest)
 
 class NestedIterator(Iterator):
     def __init__(self, nest):
         self.nest = nest
-        self.indices = [0 for x in range(len(nest))]
-
-    def next(self):
-        values = []
-        for i, idx in enumerate(self.indices):
-            if i != 0:
-                val = _nest[idx]
-            else:
-                val = self.nest[0][idx]
-                
-            if isinstance(val, tuple):
-                values += list(val)
-            elif isinstance(val, list):
-                values += val
-            else:
-                values.append(val)
-                
-            _nest = self.nest[i+1] if i+1 < len(self.nest) else None
-
-
-class NestedIterable(Iterable):
-    def __init__(self, nest):
-        self.nest = nest
-
+        # 0 for dictionary, 1 for list
+        self.mode = 0 if isinstance(nest, dict) else 1
+        self.indices = [None if self.mode==0 else 0 for x in range(2)]
+        self.increaseIndices()
+        
     def __iter__(self):
-        return NestedIterator(self.nest)
+        return self
+        
+    def get(self, nest, indices):
+        _nest = nest
+        for i in indices:
+            _nest = _nest[i]
+        return _nest
+        
+    def __next__(self):
+        if not self.indices:
+            raise StopIteration
+        
+        if self.mode == 0:
+            val = self.get(self.nest, self.indices)
+            values = self.indices + [val]
+            self.increaseIndices()
+            return values
+        elif self.mode == 1:
+            self.increaseIndices()
+        else:
+            raise Exception("Error: NestedIterator invalid mode")
+
+    def increaseIndices(self):
+        # TODO - shit codes, must be refactored
+        if self.mode == 0:
+            if not self.indices[0]:
+                self.indices[0] = sorted(self.nest.keys())[0]
+                self.indices[1] = sorted(self.nest[self.indices[0]].keys())[0]
+                return None
+            dic = self.nest[self.indices[0]]
+            keys = sorted(dic.keys())
+            if self.indices[-1] in keys:
+                idx = keys.index(self.indices[-1])
+                if idx < len(keys)-1:
+                    self.indices[-1] = keys[idx+1]
+                else:
+                    keys = sorted(self.nest.keys())
+                    idx = keys.index(self.indices[0])
+                    if idx < len(keys)-1:
+                        self.indices[0] = keys[idx+1]
+                        self.increaseIndices()
+                    else:
+                        self.indices = None
+            else:
+                self.indices[-1] = keys[0]
