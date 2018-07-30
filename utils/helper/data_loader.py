@@ -22,6 +22,7 @@ if root_path not in sys.path:
 from src.config import PATH, CONFIG, isPASCAL
 from utils.helper.data_processor import preprocessImage, preprocessAnnos
 from utils.helper.data_mapper import *
+from utils.helper.dstruct_helper import splitNumber
 from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
 
@@ -119,9 +120,12 @@ class BatchLoader(object):
         self.mode = mode
         if mode == "classes":
             classes = getClasses()
-            num = self.amount // len(classes) + 1
-            self.cls_counts = {cls : num for cls in classes}
-        
+            if self.amount >= len(classes):
+                split = splitNumber(self.amount, len(classes))
+                self.cls_counts = {cls : split[i] for i, cls in enumerate(classes)}
+            else:
+                self.cls_counts = {cls : 1 for cls in classes}
+                
     def __bool__(self):
         finished = self.size <= 0
         if finished:

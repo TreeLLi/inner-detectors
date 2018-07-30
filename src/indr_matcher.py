@@ -19,49 +19,10 @@ from src.config import CONFIG, PATH, isModeFast
 
 from utils.helper.data_loader import BatchLoader, weightedVal
 from utils.helper.data_mapper import getClassName
+from utils.helper.dstruct_helper import splitDict
 from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
 from utils.dissection.helper import iou
-
-
-'''
-Fast Mode Functions
-'''
-
-def loadRefActivMaps(img_names, layers):
-    ref_activ_maps = {}
-    for name in img_names:
-        file_path = os.path.join(PATH.MODEL.REF_ACTIV_MAPS, name+'.pkl')
-        ref_activ_map = loadObject(file_path)
-        ref_activ_map = retainLayers(ref_activ_map, layers)
-
-        for unit_id, ramap in ref_activ_map.items():
-            if unit_id not in ref_activ_maps:
-                ref_activ_maps[unit_id] = [ramap]
-            else:
-                ref_activ_maps[unit_id].append(ramap)
-    return ref_activ_maps
-
-def retainLayers(ramap, layers):
-    retained = {}
-    for layer in layers:
-        exist = False
-        for unit_id, m in ramap.items():
-            if layer in unit_id:
-                retained[unit_id] = m
-                exist = True
-        if not exist:
-            raise Exception("Exception: fast mode - incompleted stored data lacking layer {}"
-                            .format(layer))
-    return retained
-
-def saveRefActivMaps(ref_activ_maps, names):
-    for idx, name in enumerate(names):
-        ramap = {}
-        for unit_id, ramaps in ref_activ_maps.items():
-            ramap[unit_id] = ramaps[idx]
-        file_path = os.path.join(PATH.MODEL.REF_ACTIV_MAPS, name+'.pkl')
-        saveObject(ramap, file_path)
 
     
 '''
@@ -249,28 +210,6 @@ def reportProgress(start, end, bid, num, left):
 
     
 '''
-Multi-processing
-
-'''
-
-
-def splitActivMaps(activ_maps, num):
-    keys = list(activ_maps.keys())
-    size = len(keys) // num
-    left = len(keys) % num
-    sizes = [size for x in range(num)]
-    for i in range(num):
-        sizes[i] += 1 if left>0 else 0
-        left -= 1
-    splited = []
-    for size in sizes:
-        sub_keys = keys[:size]
-        splited.append({key:activ_maps[key] for key in sub_keys})
-        keys = keys[size:]
-    return splited
-
-    
-'''
 Main program
 
 '''
@@ -299,7 +238,7 @@ if __name__ == "__main__":
 
         if reflect_mode == "interpolation":
             activ_maps = model.getActivMaps(images, probe_layers)
-            activ_maps = splitActivMaps(activ_maps, num)
+            activ_maps = splitDict(activ_maps, num)
             params = [(amap, field_maps, annos) for amap in activ_maps]
             print ("Reflecting and matching activation maps...")
             batch_matches = pool.starmap(reflectAndMatch, params)
