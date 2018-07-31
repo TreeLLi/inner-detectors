@@ -204,7 +204,7 @@ class BatchLoader(object):
         return batch
 
     def reportProgress(self, num, start):
-        finished = self.amount - self.size
+        finished = self.batch_id * self.batch_size
         progress = 100 * float(finished) / self.amount
         dur = time.time() - start
         effi = dur / num
