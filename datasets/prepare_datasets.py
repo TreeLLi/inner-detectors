@@ -41,7 +41,7 @@ def mapDatasets(sources):
     path = PATH.DATA.IMG_MAP
     if not os.path.exists(path):
         img_ids = mapImageID(sources)
-        saveObject(maps, path)
+        saveObject(img_ids, path)
     else:
         img_ids = loadObject(path)
 
