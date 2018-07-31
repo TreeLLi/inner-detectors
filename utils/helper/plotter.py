@@ -7,6 +7,8 @@ To provide auxiliary functions for drawing images
 
 import cv2
 import numpy as np
+from addict import Dict as adict
+import matplotlib.pyplot as plt
 
 
 '''
@@ -35,6 +37,21 @@ def maskImage(img, masks, alpha=0.5, labels=None):
     return output
 
 '''
-General-purpose Auxiliary Functions
+Figure plot
 
 '''
+
+def plotFigure(x, y, title=None, form='line', params=None, show=False):
+    if title:
+        plt.figure(title)
+    else:
+        plt.figure()
+        
+    if form == 'line':
+        for _x, _y in zip(x, y):
+            plt.plot(_x, _y)
+
+    if show:
+        plt.show()
+    # return plt for further figure saving
+    return plt

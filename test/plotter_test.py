@@ -12,8 +12,10 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from test_helper import TestBase
+from src.config import PATH
+
 from utils.helper.plotter import *
-from utils.helper.file_manager import saveImage
+from utils.helper.file_manager import saveImage, saveFigure
 
 '''
 Test Plotter
@@ -22,6 +24,7 @@ Test Plotter
 
 class TestPlotter(TestBase):
     def test_mask_image(self):
+        self.log()
         img = self.getImage("2008_001979.jpg")
         mask = np.zeros(img.shape[:-1])
         
@@ -50,6 +53,18 @@ class TestPlotter(TestBase):
         # cv2.waitKey(0)
         saveImage(img, os.path.join(root_path, "test_plotter.jpg"))
 
+    def test_plot_figure(self):
+        self.log()
+        x = np.asarray([i for i in range(0, 10)])
+        x = [x + i for i in range(0, 10)]
+        y = reversed(x)
+        
+        plot = plotFigure(x, y, show=False)
+
+        path = os.path.join(PATH.TEST.ROOT, "test_figure.png")
+        saveFigure(plot, path)
+        os.remove(path)
+        
 
 '''
 Main program

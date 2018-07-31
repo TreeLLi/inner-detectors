@@ -11,6 +11,7 @@ import pickle
 import json
 import cv2
 
+import matplotlib.pyplot as plt
 
 '''
 General-purpose Auxiliary Func
@@ -25,7 +26,12 @@ def getFilesInDirectory(directory, postfix=""):
     else:
         return [f for f in file_names if f.lower().endswith(postfix)]
 
+def makeDirectory(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
+        
 '''
 Images I/O
 
@@ -36,25 +42,29 @@ def loadImage(directory, file_name, mode="BGR"):
     try:
         img = cv2.imread(path)
         if img is None:
-            raise Exception()
+            raise Exception("Error: failed to load image {}".format(file_name))
         else:
             if mode == "RGB":
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
-    except:
-        print ("Error: failed to load image {}".format(file_name))
-        return None
-
+    except Exception as e:
+        print (e)
+        
 def saveImage(img, file_path):
     try:
-        directory = os.path.dirname(file_path)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        makeDirectory(file_path)
         cv2.imwrite(file_path, img)
     except Exception as e:
         print (e)
-        print ("Error: failed to save image at {}".format(directory))
-    
+
+def saveFigure(plt, file_path):
+    try:
+        makeDirectory(file_path)
+        plt.savefig(file_path)
+    except Exception as e:
+        print (e)
+        
+        
 '''
 Objects I/O
 
@@ -79,9 +89,7 @@ def loadObject(file_path, dstru='list'):
 
 def saveObject(obj, file_path):
     try:
-        directory = os.path.dirname(file_path)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        makeDirectory(file_path)
         ftype = file_path.split('.')[-1]
         if ftype == 'pkl':
             with open(file_path, 'wb+') as f:
@@ -134,4 +142,5 @@ def saveListAsText(obj, file_path):
     except Exception as e:
         print ("Error: failed to save list at {}".format(file_path))
         print ("Because {}".format(e))
-    
+
+        
