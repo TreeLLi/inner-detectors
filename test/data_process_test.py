@@ -165,6 +165,51 @@ class TestDstructHelper(TestBase):
             sums.append(k_1 + k_2 + val)
             
         self.assertEqual(sums, [3.2, 3.2, 6.1, 6.2])
+
+        nest = [
+            {1 : [1, 2]},
+            {2 : [3, 4]},
+            {3 : [5, 6]}
+        ]
+
+        results = []
+        for it in nested(nest):
+            results.append(it)
+            
+        self.assertEqual(results[0], [0, 1, 0, 1])
+        self.assertEqual(results[-1], [2, 3, 1, 6])
+
+nest = {
+    1 : {
+        1.1 : 1.1,
+        1.2 : 1
+    },
+    2 : {
+        2.1 : 2,
+        2.2 : 2
+    }
+}
+ni = NestedIterator(nest)
+class TestNestedIter(TestBase):
+    def test_get(self):
+        val = ni.get([0,0])
+        self.assertEqual(val, [1, 1.1, 1.1])
+
+        val = ni.get([1,1])
+        self.assertEqual(val, [2, 2.2, 2])
+
+    def test_depth(self):
+        depth = ni.depth()
+        self.assertEqual(depth, 2)
+
+    def test_increase_indices(self):
+        self.assertEqual(ni.indices, [0, 0])
+
+        ni.increaseIndices()
+        self.assertEqual(ni.indices, [0, 1])
+
+        ni.increaseIndices()
+        self.assertEqual(ni.indices, [1, 0])
         
             
 if __name__ == "__main__":

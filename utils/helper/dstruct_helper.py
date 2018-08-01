@@ -83,53 +83,60 @@ class NestedIterator(Iterator):
     def __init__(self, nest):
         self.nest = nest
         # 0 for dictionary, 1 for list
-        self.mode = 0 if isinstance(nest, dict) else 1
-        self.indices = [None if self.mode==0 else 0 for x in range(2)]
-        self.increaseIndices()
+        depth = self.depth()
+        self.indices = [0 for x in range(depth)]
         
     def __iter__(self):
         return self
         
-    def get(self, nest, indices):
-        _nest = nest
-        for i in indices:
-            _nest = _nest[i]
-        return _nest
+    def get(self, indices, nest=None):
+        nest = nest if nest else self.nest
         
+        if not indices:
+            return [nest]
+
+        idx = indices[0]
+        if isinstance(nest, dict):
+            idx = list(nest.keys())[idx]
+
+        nest = nest[idx]
+        return [idx] + self.get(indices[1:], nest)
+
+    def depth(self, nest=None):
+        nest = nest if nest else self.nest
+
+        if isinstance(nest, list):
+            nest = nest[0]
+        elif isinstance(nest, dict):
+            key = list(nest.keys())[0]
+            nest = nest[key]
+        else:
+            return 0
+        
+        return self.depth(nest) + 1
+            
+    
     def __next__(self):
         if not self.indices:
             raise StopIteration
-        
-        if self.mode == 0:
-            val = self.get(self.nest, self.indices)
-            values = self.indices + [val]
-            self.increaseIndices()
-            return values
-        elif self.mode == 1:
-            self.increaseIndices()
-        else:
-            raise Exception("Error: NestedIterator invalid mode")
 
-    def increaseIndices(self):
-        # TODO - shit codes, must be refactored
-        if self.mode == 0:
-            if not self.indices[0]:
-                self.indices[0] = sorted(self.nest.keys())[0]
-                self.indices[1] = sorted(self.nest[self.indices[0]].keys())[0]
-                return None
-            dic = self.nest[self.indices[0]]
-            keys = sorted(dic.keys())
-            if self.indices[-1] in keys:
-                idx = keys.index(self.indices[-1])
-                if idx < len(keys)-1:
-                    self.indices[-1] = keys[idx+1]
-                else:
-                    keys = sorted(self.nest.keys())
-                    idx = keys.index(self.indices[0])
-                    if idx < len(keys)-1:
-                        self.indices[0] = keys[idx+1]
-                        self.increaseIndices()
-                    else:
-                        self.indices = None
-            else:
-                self.indices[-1] = keys[0]
+        values = self.get(self.indices)
+        self.increaseIndices()
+        return values
+
+    def increaseIndices(self, indices=None):
+        if indices is None:
+            indices = self.indices
+        elif indices == []:
+            self.indices = None
+            return None
+        else:
+            indices = indices
+        
+        curr_idx = indices[-1]
+        curr_range = self.get(indices[:-1])[-1]
+        if len(curr_range) > curr_idx+1:
+            self.indices[len(indices)-1] = curr_idx + 1
+        else:
+            self.indices[len(indices)-1] = 0
+            self.increaseIndices(indices[:-1])
