@@ -12,16 +12,49 @@ from collections import Iterator
 
 
 '''
+Arithmatic
+
+'''
+
+def dictMean(dic, key):
+    if isinstance(dic, list):
+        return dic[key]
+    elif not isinstance(dic, dict):
+        return dic
+
+    means = []
+    for k, v in dic.items():
+        _mean = dictMean(v, key)
+        means.append(_mean)
+    return np.mean(means)
+
+
+'''
 Sorting, Filter
 
 '''
 
 # result is returned as a list of tuples (key, val)
-def sortDict(dic, by_key=False, descending=True):
+def sortDict(dic, by_key=False, indices=[], descending=True):
     # sorted by dictionary values
-    key = 0 if by_key else 1
-    sort = sorted(dic.items(), key=itemgetter(key), reverse=descending)
+    _indices = [0] if by_key else [1]
+    _indices += indices
+    sort = sorted(dic.items(), key=getter(_indices), reverse=descending)
     return sort
+
+class getter:
+    def __init__(self, indices):
+        self.indices = indices
+        self.sequen_types = [list, dict, tuple]
+
+    def __call__(self, sequen, _indices=None):
+        _indices = _indices if _indices else self.indices
+
+        if type(sequen) not in self.sequen_types:
+            return sequen
+        else:
+            sequen = sequen[_indices[0]]
+            return self.__call__(sequen, _indices[1:])
 
 
 '''

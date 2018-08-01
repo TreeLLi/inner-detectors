@@ -47,11 +47,33 @@ def plotFigure(x, y, title=None, form='line', params=None, show=False):
     else:
         plt.figure()
         
-    if form == 'line':
+    plot = _getPlot(form)
+    x_type = type(x[0]) if isinstance(x, list) else type(x)
+    y_type = type(y[0]) if isinstance(y, list) else type(y)
+    if x_type == list and y_type == list:
         for _x, _y in zip(x, y):
-            plt.plot(_x, _y)
-
+            plot(_x, _y)
+    elif x_type not in [list, dict] and y_type == list:
+        for _y in y:
+            plot(x, _y)
+    elif x_type not in [list, dict] and y_type == dict:
+        for k, _y in y.items():
+            plot(x, _y, label=k)
+    elif x_type == dict and y_type == dict:
+        for k, _y in y.items():
+            plot(x[k], _y, label=k)
+    elif x_type not in [list, dict] and y_type not in [list, dict]:
+        plot(x, y)
+    else:
+        raise Exception("Error: unknown data types for plotting")
+    
     if show:
         plt.show()
     # return plt for further figure saving
     return plt
+
+def _getPlot(form):
+    if form == 'line':
+        return plt.plot
+    elif form == 'spot':
+        return plt.scatter

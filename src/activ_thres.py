@@ -19,8 +19,9 @@ from src.config import PATH, CONFIG
 from src.indr_matcher import matchActivsAnnos, combineMatches, reportProgress
 
 from utils.helper.data_loader import BatchLoader
-from utils.helper.dstruct_helper import splitDict
-from utils.helper.file_manager import saveObject, loadObject
+from utils.helper.dstruct_helper import splitDict, dictMean, sortDict, nested
+from utils.helper.file_manager import saveObject, loadObject, saveFigure
+from utils.helper.plotter import plotFigure
 from utils.model.model_agent import ModelAgent
 from utils.dissection.helper import iou
 from utils.dissection.activ_processor import reflect
@@ -47,31 +48,62 @@ Main Program
 '''
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=4000, mode="classes")
-    probe_layers = loadObject(PATH.MODEL.PROBE)
-    model = ModelAgent()
-    field_maps = model.getFieldmaps()
-
     quans = [x for x in range(0, 100, 10)]
+    file_path = PATH.OUT.ACTIV_THRESH
+
     pool = Pool()
     num = pool._processes
-    matches = [None for x in range(len(quans))]
-    while bl:
-        start = time.time()
-        batch = bl.nextBatch()
-        imgs = batch[1]
-        annos = batch[2]
+    if not os.path.exists(file_path):
+        print ("Can not find existing match results, thus beginning from scratch.")
+        bl = BatchLoader(amount=4000, mode="classes")
+        probe_layers = loadObject(PATH.MODEL.PROBE)
+        model = ModelAgent()
+        field_maps = model.getFieldmaps()
+        
+        matches = [None for x in range(len(quans))]
+        while bl:
+            start = time.time()
+            batch = bl.nextBatch()
+            imgs = batch[1]
+            annos = batch[2]
 
-        activ_maps = model.getActivMaps(imgs, probe_layers)
-        activ_maps = splitDict(activ_maps, num)
-        params = [(amap, field_maps, annos, quans) for amap in activ_maps]
-        batch_matches = pool.starmap(process, params)
-        print ("Combine matches...")
-        for batch_match in batch_matches:
-            for idx, bm in enumerate(batch_match):
-                matches[idx] = combineMatches(matches[idx], bm)
+            activ_maps = model.getActivMaps(imgs, probe_layers)
+            activ_maps = splitDict(activ_maps, num)
+            params = [(amap, field_maps, annos, quans) for amap in activ_maps]
+            batch_matches = pool.starmap(process, params)
+            print ("Combine matches...")
+            for batch_match in batch_matches:
+                for idx, bm in enumerate(batch_match):
+                    matches[idx] = combineMatches(matches[idx], bm)
+                    
+            reportProgress(start, time.time(), bl.batch_id, len(imgs), bl.size)
+        saveObject(matches, file_path)
+    else:
+        matches = loadObject(file_path)
+        print("Find existing match results, thus skipping to analyse results.")
 
-        reportProgress(start, time.time(), bl.batch_id, len(imgs), bl.size)
-    # process results
-    path = os.path.join(PATH.OUT.ROOT, "vgg16/activ_thres.pkl")
-    saveObject(matches, path)
+    # match results analysis
+    # overall comparison
+    means = pool.starmap(dictMean, [(m, 0) for m in matches])
+    print (means)
+    plt = plotFigure(quans, means, title="means v.s. quantiles", show=True)
+
+    # sort and comparison
+    # data = {}
+    # for idx, _matches in enumerate(matches):
+    #     for unit_id, ccp_matches in _matches.items():
+    #         for ccp, m in ccp_matches.items():
+    #             if unit_id not in data:
+    #                 data[unit_id] = {}
+    #             unit_data = data[unit_id]
+                
+    #             if ccp not in unit_data:
+    #                 unit_data[ccp] = []
+    #             unit_ccp_data = unit_data[ccp]
+    #             unit_ccp_data.append(m[0])
+
+    # plot_path = os.path.join(PATH.OUT.ROOT, "activ_thres")
+    # for unit_id, ccp_data in data.items():
+    #     file_path = os.path.join(plot_path, unit_id + ".png")
+    #     plt = plotFigure(quans, ccp_data, title=unit_id)
+    #     saveFigure(plt, file_path)

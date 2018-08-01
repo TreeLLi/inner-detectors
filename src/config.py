@@ -88,6 +88,7 @@ if CONFIG.DIS.MODEL == "VGG16":
     PATH.OUT.CONCEPT_MATCH_REPORT = os.path.join(_vgg16_path, "vgg16_concept_matches.txt")
     PATH.OUT.UNIT_MATCHES = os.path.join(_vgg16_path, "vgg16_unit_matches.pkl")
     PATH.OUT.CONCEPT_MATCHES = os.path.join(_vgg16_path, "vgg16_concept_matches.pkl")
+    PATH.OUT.ACTIV_THRESH = os.path.join(_vgg16_path, "activ_thres.pkl")
     
 # model path
 _model_path = os.path.join(_root_path, "pre-models")

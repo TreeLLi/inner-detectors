@@ -14,10 +14,10 @@ from test_helper import TestBase
 from src.config import PATH
 
 from utils.helper.data_processor import *
+from utils.helper.dstruct_helper import *
 from utils.helper.data_loader import BatchLoader
 from utils.helper.data_mapper import getClassNames
 from utils.helper.file_manager import saveImage
-from utils.helper.dstruct_helper import *
 
 
 '''
@@ -165,7 +165,22 @@ class TestDstructHelper(TestBase):
             sums.append(k_1 + k_2 + val)
             
         self.assertEqual(sums, [3.2, 3.2, 6.1, 6.2])
-        
+
+    def test_mean(self):
+        dic = {
+            1 : {
+                1.1 : [2, 1],
+                1.2 : [2, 2]
+            },
+            2 : {
+                2.1 : [4, 1]
+            },
+            3 : {
+                3.1 : [0, 0]
+            }
+        }
+        mean = dictMean(dic, key=0)
+        self.assertEqual(mean, 2)
             
 if __name__ == "__main__":
     unittest.main()

@@ -57,9 +57,9 @@ class TestPlotter(TestBase):
         self.log()
         x = np.asarray([i for i in range(0, 10)])
         x = [x + i for i in range(0, 10)]
-        y = reversed(x)
+        y = list(reversed(x))
         
-        plot = plotFigure(x, y, show=False)
+        plot = plotFigure(x, y, show=True)
 
         path = os.path.join(PATH.TEST.ROOT, "test_figure.png")
         saveFigure(plot, path)
