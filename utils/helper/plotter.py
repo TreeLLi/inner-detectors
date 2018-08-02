@@ -66,6 +66,12 @@ def plotFigure(x, y, title=None, form='line', params=None, show=False):
         plot(x, y)
     else:
         raise Exception("Error: unknown data types for plotting")
+
+    if 'xlim' in params:
+        plt.xlim(params['xlim'])
+
+    if 'ylim' in params:
+        plt.ylim(params['ylim'])
     
     if show:
         plt.show()

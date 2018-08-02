@@ -177,6 +177,18 @@ class TestDstructHelper(TestBase):
         self.assertEqual(results[0], [0, 1, 0, 1])
         self.assertEqual(results[-1], [2, 3, 1, 6])
 
+        nest = [
+            {1 : [{1:1}, {2:2}]},
+            {2 : [{3:3}, {4:4}]},
+            {3 : [{3:5}, {6:5}]}
+        ]
+
+        results = []
+        for it in nested(nest,depth=2):
+            results.append(it)
+        self.assertEqual(results[0], [0, 1, [{1:1}, {2:2}]])
+        self.assertEqual(results[-1], [2, 3, [{3:5}, {6:5}]])
+
     def test_mean(self):
         dic = {
             1 : {

@@ -8,10 +8,10 @@ To verify the semantic association
 
 import os, sys
 import numpy as np
-from itertools import product
+from os.path import join, exists, dirname, abspath
 
-curr_path = os.path.dirname(os.path.abspath(__file__))
-root_path = os.path.join(curr_path, "..")
+curr_path = dirname(abspath(__file__))
+root_path = join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
@@ -19,8 +19,10 @@ from src.config import PATH
     
 from utils.helper.data_loader import BatchLoader, weightedVal
 from utils.helper.data_mapper import getClassName
+from utils.helper.plotter import plotFigure
 from utils.helper.data_processor import patch
-from utils.helper.file_manager import saveObject, loadObject
+from utils.helper.dstruct_helper import nested
+from utils.helper.file_manager import saveObject, loadObject, saveFigure
 from utils.dissection.activ_processor import activAttrs
 from utils.model.model_agent import ModelAgent, splitUnitID
 
@@ -48,7 +50,7 @@ def updateActivAttrDiffs(attr_diffs, activ_attrs, anno_ids, patched=False):
                         diffs += [[0,0]] * (attr_idx+1 - len(diffs))
                     diffs[attr_idx][update_idx] += attr
 
-                    
+
 def computeAttrChange(attr_diffs):
     averages = {}
     for unit_id, unit_diffs in attr_diffs.items():
@@ -84,28 +86,66 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=1)
-    model = ModelAgent(input_size=1)
-    # probe_layers = loadObject(PATH.MODEL.PROBE)
-    probe_layers = ["conv5_2", "conv5_3"]
+    data_path = PATH.OUT.UNIT_ATTRS
     
-    attr_diffs = {}
-    while bl:
-        batch = bl.nextBatch()
-        imgs = batch[1]
-        annos = batch[2]
-
-        activ_maps = model.getActivMaps(imgs, probe_layers)
-        activ_attrs = activAttrs(activ_maps)
-        anno_ids = [[anno[0] for anno in img_annos] for img_annos in annos]
-        updateActivAttrDiffs(attr_diffs, activ_attrs, anno_ids, patched=False)
+    if not exists(data_path):
+        print ("Can not find existing verification data, thus beginning from scratch.")
         
-        imgs, anno_ids = patch(imgs, annos)
-        activ_maps_p = model.getActivMaps(imgs, probe_layers)
-        activ_attrs_p = activAttrs(activ_maps_p)
-        updateActivAttrDiffs(attr_diffs, activ_attrs_p, anno_ids, patched=True)
+        bl = BatchLoader(amount=100)
+        model = ModelAgent(input_size=50)
+        probe_layers = loadObject(PATH.MODEL.PROBE)
+        # probe_layers = ["conv5_2", "conv5_3"]
+        
+        attr_diffs = {}
+        while bl:
+            batch = bl.nextBatch()
+            imgs = batch[1]
+            annos = batch[2]
 
-    attr_change_aves, attr_changes = computeAttrChange(attr_diffs)
-    
-    # comparison with identification results
+            activ_maps = model.getActivMaps(imgs, probe_layers)
+            activ_attrs = activAttrs(activ_maps)
+            anno_ids = [[anno[0] for anno in img_annos] for img_annos in annos]
+            updateActivAttrDiffs(attr_diffs, activ_attrs, anno_ids, patched=False)
+        
+            imgs, anno_ids = patch(imgs, annos)
+            activ_maps_p = model.getActivMaps(imgs, probe_layers)
+            activ_attrs_p = activAttrs(activ_maps_p)
+            updateActivAttrDiffs(attr_diffs, activ_attrs_p, anno_ids, patched=True)
+        
+        attr_change_aves, attr_changes = computeAttrChange(attr_diffs)
+        saveObject(attr_changes, data_path)
+    else:
+        print ("Find existing verification data, beginning analysis.")
+        attr_changes = loadObject(data_path)
+
+    # analysis for assessing if identification results correct
+    concept_matches = loadObject(PATH.OUT.CONCEPT_MATCHES)
+    data_x = {}
+    data_y = {}
+    for ccp, unit, match in nested(concept_matches, depth=2):
+        try:
+            mean_change = attr_changes[unit][ccp][0]
+            if not np.isfinite(mean_change):
+                continue
+            
+            if ccp not in data_x:
+                data_x[ccp] = []
+                data_y[ccp] = []
+                
+            data_y[ccp].append(mean_change)
+            data_x[ccp].append(match[0])
+            
+        except:
+            continue
+            
+    # plot
+    plot_path = PATH.OUT.VERIFICATION
+    for ccp, ccp_x in data_x.items():
+        ccp_y = data_y[ccp]
+        ccp = getClassName(ccp, full=True)
+        params = {'xlim' : (0, 1), 'ylim' : (-1, 1)}
+        figure = plotFigure(ccp_x, ccp_y, title=ccp, form='spot', params=params)
+
+        figure_path = join(plot_path, ccp+".png")
+        saveFigure(figure, figure_path)
     

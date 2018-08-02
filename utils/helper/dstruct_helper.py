@@ -109,14 +109,14 @@ Iteration
 
 '''
 
-def nested(nest):
-    return NestedIterator(nest)
+def nested(nest, depth=None):
+    return NestedIterator(nest, depth)
 
 class NestedIterator(Iterator):
-    def __init__(self, nest):
+    def __init__(self, nest, depth=None):
         self.nest = nest
         # 0 for dictionary, 1 for list
-        depth = self.depth()
+        depth = self.depth() if not depth else depth
         self.indices = [0 for x in range(depth)]
         
     def __iter__(self):
