@@ -61,8 +61,8 @@ class ModelAgent:
         return self.field_maps
             
     def getActivMaps(self, imgs, layers):
-        print ("Fetching activation maps for specific units ...")
         model = self.model
+        imgs = np.asarray(imgs) if not isinstance(imgs, np.ndarray) else imgs
         # generate activation data by forward pass
         if imgs.shape[0] != self.input_size:
             # rebuild model for new input dimension

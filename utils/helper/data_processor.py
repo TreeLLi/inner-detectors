@@ -88,5 +88,5 @@ def patch(imgs, annos, mode='mask'):
                 patched[mask>0] = [0, 0, 0]
                 data[0].append(patched)
             data[1].append([aid])
-    data[0] = np.asarray(data[0])
+    # data[0] = np.asarray(data[0])
     return data

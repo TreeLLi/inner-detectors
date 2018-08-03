@@ -167,10 +167,6 @@ class BatchLoader(object):
                         # sample causing imbalance classes distribution
                         # ignore it and load one more
                         num += 1
-                        if self.backup:
-                            # if backup data exists, move one to supply
-                            self.data.append(self.backup[0])
-                            self.backup = self.backup[1:]
                         continue
                 
                 if isPASCAL(s_source):
@@ -199,6 +195,10 @@ class BatchLoader(object):
                             self.data = []
                             num = 0
                             break
+            if self.backup:
+                # if backup data exists, supply
+                self.data += self.backup[:num]
+                self.backup = self.backup[num:]
                         
         batch[1] = np.asarray(batch[1])
         self.progress[1] = time.time()

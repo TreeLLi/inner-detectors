@@ -101,14 +101,22 @@ class TestDstructHelper(TestBase):
             4 : 4
         }
 
-        splited = splitDict(dic, 4)
-        self.assertLength(splited, 4)
-        self.assertLength(splited[-1], 1)
+        split = splitDict(dic, 4)
+        self.assertLength(split, 4)
+        self.assertLength(split[-1], 1)
 
-        splited = splitDict(dic, 3)
-        self.assertLength(splited, 3)
-        amount = sum([len(x) for x in splited])
+        split = splitDict(dic, 3)
+        self.assertLength(split, 3)
+        amount = sum([len(x) for x in split])
         self.assertEqual(amount, 4)
+
+        split = splitDict(dic, base=2)
+        self.assertLength(split, 2)
+        self.assertEqual(split[0], {1:1, 2:2})
+
+        split = splitDict(dic, base=3)
+        self.assertLength(split, 2)
+        self.assertEqual(split[-1], {4:4})
 
     def test_split_list(self):
         self.log()

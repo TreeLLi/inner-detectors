@@ -9,6 +9,7 @@ To verify the semantic association
 import os, sys
 import numpy as np
 from os.path import join, exists, dirname, abspath
+from multiprocessing import Pool
 
 curr_path = dirname(abspath(__file__))
 root_path = join(curr_path, "..")
@@ -21,7 +22,7 @@ from utils.helper.data_loader import BatchLoader, weightedVal
 from utils.helper.data_mapper import getClassName
 from utils.helper.plotter import plotFigure
 from utils.helper.data_processor import patch
-from utils.helper.dstruct_helper import nested
+from utils.helper.dstruct_helper import nested, splitList
 from utils.helper.file_manager import saveObject, loadObject, saveFigure
 from utils.dissection.activ_processor import activAttrs
 from utils.model.model_agent import ModelAgent, splitUnitID
@@ -78,40 +79,51 @@ def computeAttrChange(attr_diffs):
 
     return averages, attr_diffs
 
-
+    
 '''
 Main program
 
 '''
-
 
 if __name__ == "__main__":
     data_path = PATH.OUT.UNIT_ATTRS
     
     if not exists(data_path):
         print ("Can not find existing verification data, thus beginning from scratch.")
-        
-        bl = BatchLoader(amount=100)
-        model = ModelAgent(input_size=50)
+
+        input_num = 15
+        bl = BatchLoader(batch_size=input_num)
+        model = ModelAgent(input_size=input_num)
         probe_layers = loadObject(PATH.MODEL.PROBE)
-        # probe_layers = ["conv5_2", "conv5_3"]
-        
+
         attr_diffs = {}
+        patch_data = [[], []]
         while bl:
             batch = bl.nextBatch()
             imgs = batch[1]
             annos = batch[2]
 
+            # obtain original activation maps
+            print ("Fetching activation maps for specific units ...")
             activ_maps = model.getActivMaps(imgs, probe_layers)
             activ_attrs = activAttrs(activ_maps)
             anno_ids = [[anno[0] for anno in img_annos] for img_annos in annos]
             updateActivAttrDiffs(attr_diffs, activ_attrs, anno_ids, patched=False)
-        
-            imgs, anno_ids = patch(imgs, annos)
-            activ_maps_p = model.getActivMaps(imgs, probe_layers)
-            activ_attrs_p = activAttrs(activ_maps_p)
-            updateActivAttrDiffs(attr_diffs, activ_attrs_p, anno_ids, patched=True)
 
+            # split data for multi-processing
+            imgs, anno_ids = patch(imgs, annos)
+            patch_data[0] += imgs
+            patch_data[1] += anno_ids
+
+            while(len(patch_data[0])>=input_num or (len(patch_data[0])>0 and not bl)):
+                imgs = patch_data[0][:input_num]
+                anno_ids = patch_data[1][:input_num]
+                activ_maps_p = model.getActivMaps(imgs, probe_layers)
+                activ_attrs_p = activAttrs(activ_maps_p)
+                patch_data = [_patch_data[input_num:] for _patch_data in patch_data]
+                
+                updateActivAttrDiffs(attr_diffs, activ_attrs_p, anno_ids, patched=True)
+                
             bl.reportProgress()
             
         attr_change_aves, attr_changes = computeAttrChange(attr_diffs)

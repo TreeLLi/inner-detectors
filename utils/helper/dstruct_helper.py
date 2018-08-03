@@ -78,9 +78,9 @@ Split
 
 '''
 
-def splitDict(dic, num):
-    distri = splitNumber(len(dic), num)
+def splitDict(dic, amount=None, base=None):
     split = []
+    distri = splitNumber(len(dic), amount, base)
     keys = list(dic.keys())
     for size in distri:
         sub_keys = keys[:size]
@@ -88,19 +88,28 @@ def splitDict(dic, num):
         split.append({key : dic[key] for key in sub_keys})
     return split
 
-def splitList(lis, num):
-    distri = splitNumber(len(lis), num)
+def splitList(lis, amount=None, base=None):
+    distri = splitNumber(len(lis), amount, base)
     split = []
     for size in distri:
         split.append(lis[:size])
         lis = lis[size:]
     return split
 
-def splitNumber(num, amount):
-    base = num // amount
-    left = num % amount
-    split = [base + 1 if x < left else base
-             for x in range(amount)]
+def splitNumber(num, amount=None, base=None):
+    if amount:
+        base = num // amount
+        left = num % amount
+        split = [base + 1 if x < left else base
+                 for x in range(amount)]
+    elif base:
+        amount = num // base
+        split = [base for x in range(amount)]
+        left = num % base
+        if left != 0:
+            split.append(left)
+    else:
+        raise Exception("Error: invalid split number parameters.")
     return split
 
 
