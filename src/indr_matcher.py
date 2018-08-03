@@ -7,7 +7,6 @@ To match semantic concepts with hidden units in intermediate layers
 
 
 import os, sys
-import time, datetime
 from multiprocessing import Pool
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
@@ -190,24 +189,6 @@ def reportMatchesInText(matches, file_path, form):
 def reportMatchesInFigure(matches):
     print ("placeholder")
 
-
-'''
-Progress report
-
-'''
-
-
-def reportProgress(start, end, bid, num, left):
-    dur = end - start
-    effi = dur / num
-    print ("Batch {}: finished {} samples in {:.2f} sec. ({:.2f} sec. / sample)"
-           .format(bid, num, dur, effi))
-    remaining_time = left * effi
-    end_time = datetime.datetime.now() + datetime.timedelta(seconds=remaining_time)
-    end_time = end_time.strftime("%X %d/%m")
-    remaining_time = remaining_time / 60
-    print ("Unfinished: {} samples, estimated finishing time is {} (after {:.2f} min)".format(left, end_time, remaining_time))
-
     
 '''
 Main program
@@ -231,7 +212,6 @@ if __name__ == "__main__":
     num = pool._processes
     matches = None
     while bl:
-        start = time.time()
         batch = bl.nextBatch()
         images = batch[1]
         annos = batch[2]
@@ -257,6 +237,6 @@ if __name__ == "__main__":
         matches = combineMatches(matches, batch_match)
         batch_matches = None
         
-        reportProgress(start, time.time(), bl.batch_id, len(images), bl.size)
+        bl.reportProgress()
         
     reportMatchResults(matches)

@@ -111,7 +111,9 @@ if __name__ == "__main__":
             activ_maps_p = model.getActivMaps(imgs, probe_layers)
             activ_attrs_p = activAttrs(activ_maps_p)
             updateActivAttrDiffs(attr_diffs, activ_attrs_p, anno_ids, patched=True)
-        
+
+            bl.reportProgress()
+            
         attr_change_aves, attr_changes = computeAttrChange(attr_diffs)
         saveObject(attr_changes, data_path)
     else:

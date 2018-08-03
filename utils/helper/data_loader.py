@@ -10,7 +10,7 @@ Batch structure:
 
 import os, sys
 import numpy as np
-import time
+import time, datetime
 
 from os.path import exists
 
@@ -116,7 +116,8 @@ class BatchLoader(object):
             
         self.amount = len(self.data)
         self.batch_id = 0
-
+        self.progress = [0 for x in range(4)]
+        
         self.mode = mode
         if mode == "classes":
             classes = getClasses()
@@ -140,7 +141,7 @@ class BatchLoader(object):
     def nextBatch(self, amount=None):
         self.batch_id += 1
         print ("Batch {}: loading...".format(self.batch_id))
-        start = time.time()
+        self.progress[0] = time.time()
         # order: [ids, imgs, annos]
         batch = [[], [], []]
         
@@ -200,23 +201,9 @@ class BatchLoader(object):
                             break
                         
         batch[1] = np.asarray(batch[1])
-        self.reportProgress(len(batch[1]), start)
+        self.progress[1] = time.time()
+        self.progress[2] = len(batch[1])
         return batch
-
-    def reportProgress(self, num, start):
-        finished = self.batch_id * self.batch_size
-        progress = 100 * float(finished) / self.amount
-        dur = time.time() - start
-        effi = dur / num
-        report = ("Batch {}: load {} samples, {}/{}({:.2f}%), taking {:.2f} sec. ({:.2f} sec. / sample)"
-                  .format(self.batch_id,
-                          num,
-                          finished,
-                          self.amount,
-                          progress,
-                          dur,
-                          effi))
-        print (report)
 
     def finish(self):
         if not exists(PATH.DATA.CLS_MAP):
@@ -228,3 +215,27 @@ class BatchLoader(object):
         if DESCRIBE_DATA:
             print ("Data statistics: saved")
             saveObject(sortAsClass(des), PATH.DATA.STATISTICS)
+
+    def reportProgress(self):
+        batch = self.progress[2]
+        finished = self.progress[3] + batch
+        self.progress[3] = finished
+        prop = 100 * float(finished) / self.amount
+        left = self.amount - finished
+
+        dur_load = self.progress[1] - self.progress[0]
+        dur_batch = time.time() - self.progress[0]
+
+        eff_load = dur_load / batch
+        eff_batch = dur_batch / batch
+
+        left_time = left * eff_batch
+        end_time = datetime.datetime.now() + datetime.timedelta(seconds=left_time)
+        end_time = end_time.strftime("%X %d/%m")
+        
+        report = "Batch {}: load {} samples, {}/{}({:.2f}%), remaining {} samples.\n"
+        report = report.format(self.batch_id, batch, finished, self.amount, prop, left)
+        report += "\t loading {:.2f} sec./sample, total {:.2f} sec./sample, end time {}"
+        report = report.format(eff_load, eff_batch, end_time)
+        
+        print (report)

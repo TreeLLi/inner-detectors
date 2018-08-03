@@ -16,7 +16,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 from src.config import PATH, CONFIG
-from src.indr_matcher import matchActivsAnnos, combineMatches, reportProgress
+from src.indr_matcher import matchActivsAnnos, combineMatches
 
 from utils.helper.data_loader import BatchLoader
 from utils.helper.dstruct_helper import splitDict, dictMean, sortDict, nested
@@ -62,7 +62,6 @@ if __name__ == "__main__":
         
         matches = [None for x in range(len(quans))]
         while bl:
-            start = time.time()
             batch = bl.nextBatch()
             imgs = batch[1]
             annos = batch[2]
@@ -75,8 +74,8 @@ if __name__ == "__main__":
             for batch_match in batch_matches:
                 for idx, bm in enumerate(batch_match):
                     matches[idx] = combineMatches(matches[idx], bm)
-                    
-            reportProgress(start, time.time(), bl.batch_id, len(imgs), bl.size)
+            bl.reportProgress()
+            
         saveObject(matches, file_path)
     else:
         matches = loadObject(file_path)
