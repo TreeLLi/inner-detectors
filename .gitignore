@@ -5,6 +5,7 @@ std_out.txt
 broden1_227
 pascal_part
 datasets/*.txt
+ms_coco
 
 # models
 pre-models

@@ -6,18 +6,18 @@ To download, organise and generate intermediate description files
 '''
 
 
-import os, sys
+import sys
 from operator import itemgetter
-from os.path import exists
+from os.path import exists, join, dirname, abspath
 import numpy as np
 import time
 
-curr_path = os.path.dirname(os.path.abspath(__file__))
-root_path = os.path.join(curr_path, "..")
+curr_path = dirname(abspath(__file__))
+root_path = join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import CONFIG, PATH, isPASCAL
+from src.config import CONFIG, PATH, isPASCAL, isCOCO
 from utils.helper.file_manager import loadObject, saveObject, getFilesInDirectory
 from utils.helper.anno_parser import parsePASCALPartAnno
 from utils.helper.data_mapper import mapClassID
@@ -38,73 +38,71 @@ Images ID, Classes Mapping
 '''
 
 def mapDatasets(sources):
-    path = PATH.DATA.IMG_MAP
-    if not os.path.exists(path):
-        img_ids = mapImageID(sources)
-        saveObject(img_ids, path)
-    else:
-        img_ids = loadObject(path)
-
-    
-    mappings = [None, None]
-    path = PATH.DATA.CLS_MAP
-    mappings[0] = loadObject(path) if exists(path) else []
-    path = PATH.DATA.IMG_CLS_MAP
-    mappings[1] = None if (exists(path) and loadObject(path)) else []
-
-    if all(m != [] for m in mappings):
-        # all mapping exists,
-        # stop following mapping procedures
-        return None
-    
-    amount = len(img_ids)
-    start = time.time()
-    for idx, img_id in enumerate(img_ids):
-        if idx % 100 == 0:
-            remg = amount - idx
-            per = remg / float(amount) * 100
-            dur = time.time() - start
-            start = time.time()
-            eff = dur / 100
-            print ("Mapping class: finished {}, remaining {}({:.2f}%), effi {:.2f}/img"
-                   .format(idx, remg, per, eff))
-            
-        if isPASCAL(img_id[1]):
-            dirt = PATH.DATA.PASCAL.ANNOS
-            file_name = img_id[0] + ".mat"
-            parsePASCALPartAnno(dirt, file_name, mappings, mapClassID)
-        
-    if not exists(path):
-        saveObject(mappings[1], path)
-
-    path = PATH.DATA.CLS_MAP
-    if not exists(path):
-        saveObject(mappings[0], path)
-
-
-'''
-Map image id
-
-'''
-
-def mapImageID(sources):
-    maps = []
-    # sort sources to guarantee same order for same sources
+    maps = [[] for x in range(3)]
     sources = sorted(sources)
     for source in sources:
         if isPASCAL(source):
-            _maps = loadPASCALDataList(source)
-            _maps = sorted(_maps, key=itemgetter(0))
-        maps += _maps
-    maps = [x + (idx,) for idx, x in enumerate(maps)]
-    return maps
+            mapPASCAL(maps, source)
+        elif isCOCO(source):
+            mapCOCO(maps, source)
 
-def loadPASCALDataList(source_id):
-    directory = PATH.DATA.PASCAL.ANNOS
-    postfix = "mat"
-    data = getFilesInDirectory(directory, postfix)
-    return [(x[x.rfind('/')+1:-4], source_id) for x in data]
+    paths = [PATH.DATA.IMG_MAP, PATH.DATA.CLS_MAP, PATH.DATA.IMG_CLS_MAP]
+    for _map, _path in zip(maps, paths):
+        saveObject(_map, _path)
 
+def mapPASCAL(maps, source):
+    print ("Mapping PASCAL Part dataset...")
+    img_ids, cls_map, img_cls_map = maps
+
+    # image id
+    anno_dir = PATH.DATA.PASCAL.ANNOS
+    data = getFilesInDirectory(anno_dir, "mat")
+    data = [(x[x.rfind('/')+1:-4], source) for x in data]
+    img_ids += data
+    
+    # class map
+    for img_id in data:
+        file_name = img_id[0] + ".mat"
+        parsePASCALPartAnno(anno_dir,
+                            file_name,
+                            [cls_map, img_cls_map],
+                            mapClassID)
+    print ("Finish mapping PASCAL Part dataset.")
+        
+def mapCOCO(maps, source):
+    print ("Mapping MS-COCO dataset...")
+    img_ids, cls_map, img_cls_map = maps
+    conv = {
+        "couch" : "sofa",
+        "potted plant" : "pottedplant",
+        "dining table" : "table",
+        "motorcycle" : "motorbike",
+        "airplane" : "aeroplane",
+        "tv" : "tvmoniter"
+    }
+    for subset in ["val"]:
+        file_name = "instances_{}2017.json".format(subset)
+        file_path = join(PATH.DATA.COCO.ANNOS, file_name)
+        coco = loadObject(file_path)
+        
+        classes = coco['categories']
+        for cls in classes:
+            name = cls['name']
+            cls_map += [conv[name]] if name in conv else [name]
+
+        annos = {}
+        for anno in coco['annotations']:
+            img_id = anno['image_id']
+            cls = anno['category_id']
+            if img_id not in annos:
+                annos[img_id] = set()
+            annos[img_id].add(cls)
+
+        data = sorted(list(annos.keys()))
+        for img_id in data:
+            img_cls = [img_id] + list(annos[img_id])
+            img_cls_map.append(img_cls)
+            img_ids.append((img_id, source, subset))
 
 '''
 Main program
