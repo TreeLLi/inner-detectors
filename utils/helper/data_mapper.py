@@ -62,9 +62,8 @@ def getImageClasses(img_id):
         return img_cls_map[img_id][1:]
     elif isinstance(img_id, str):
         for img_cls in img_cls_map:
-            if img_cls[0] != img_id:
-                continue
-            return img_cls[1:]
+            if img_cls[0] == img_id:
+                return img_cls[1:]
         raise Exception("Error: can not find image {}".format(img_id))
     else:
         raise Exception("Error: invalid image identifier.")
@@ -155,3 +154,24 @@ def sortAsClass(mapping):
             if cls_id in mapping:
                 sorted.append([cls] + mapping[cls_id])
     return sorted
+
+
+'''
+Datasets Label Convertor
+
+'''
+
+CONV = {
+    "couch" : "sofa",
+    "potted plant" : "pottedplant",
+    "dining table" : "table",
+    "motorcycle" : "motorbike",
+    "airplane" : "aeroplane",
+    "tv" : "tvmoniter"
+}
+
+def convert(name):
+    if name in CONV:
+        return CONV[name]
+    else:
+        return name

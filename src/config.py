@@ -24,7 +24,7 @@ Config for program parameters
 CONFIG = adict()
 
 # datasets
-CONFIG.DATA.SOURCES = ['COCO'] #'PASCAL']
+CONFIG.DATA.SOURCES = ['PASCAL', 'COCO']
 # true, generate descriptive statistics report for datasets
 CONFIG.DATA.STATISTICS = True
 
@@ -82,8 +82,8 @@ PATH.DATA.PASCAL = adict({
 _coco_path = join(_data_path, "ms_coco")
 PATH.DATA.COCO = adict({
     "ROOT" : _coco_path,
-    "ANNOS" : join(_coco_path, "annotations"),
-    "IMGS" : join(_coco_path, "images")
+    "ANNOS" : join(_coco_path, "annotations/instances_{}2017.json"),
+    "IMGS" : join(_coco_path, "images/{}2017")
 })
 
 

@@ -14,7 +14,7 @@ root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import CONFIG, PATH, isModeFast
+from src.config import CONFIG, PATH
 
 from utils.helper.data_loader import BatchLoader, weightedVal
 from utils.helper.data_mapper import getClassName
@@ -140,7 +140,11 @@ def filterMatches(matches, top=3, iou_thres=0.00):
                 top_n = top_n[:-1]
 
         retained = []
-        for concept, iou in top_n:
+        for _match in top_n:
+            if _match is None:
+                break
+            else:
+                concept, iou = _match
             if iou >= iou_thres:
                 unit_match = [concept] + unit_matches[concept]
                 retained.append(unit_match)

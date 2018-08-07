@@ -20,7 +20,7 @@ if root_path not in sys.path:
 from src.config import CONFIG, PATH, isPASCAL, isCOCO
 from utils.helper.file_manager import loadObject, saveObject, getFilesInDirectory
 from utils.helper.anno_parser import parsePASCALPartAnno
-from utils.helper.data_mapper import mapClassID
+from utils.helper.data_mapper import mapClassID, getClassID, convert
 
 
 '''
@@ -39,13 +39,15 @@ Images ID, Classes Mapping
 
 def mapDatasets(sources):
     maps = [[] for x in range(3)]
+    maps[1].append("background")
     sources = sorted(sources)
     for source in sources:
         if isPASCAL(source):
             mapPASCAL(maps, source)
         elif isCOCO(source):
             mapCOCO(maps, source)
-
+            
+    maps[0] = [(idx, ) + _map for idx, _map in enumerate(maps[0])]
     paths = [PATH.DATA.IMG_MAP, PATH.DATA.CLS_MAP, PATH.DATA.IMG_CLS_MAP]
     for _map, _path in zip(maps, paths):
         saveObject(_map, _path)
@@ -61,39 +63,39 @@ def mapPASCAL(maps, source):
     img_ids += data
     
     # class map
-    for img_id in data:
+    for img_id in data[:100]:
         file_name = img_id[0] + ".mat"
         parsePASCALPartAnno(anno_dir,
                             file_name,
-                            [cls_map, img_cls_map],
-                            mapClassID)
+                            [cls_map, img_cls_map])
     print ("Finish mapping PASCAL Part dataset.")
         
 def mapCOCO(maps, source):
     print ("Mapping MS-COCO dataset...")
     img_ids, cls_map, img_cls_map = maps
-    conv = {
-        "couch" : "sofa",
-        "potted plant" : "pottedplant",
-        "dining table" : "table",
-        "motorcycle" : "motorbike",
-        "airplane" : "aeroplane",
-        "tv" : "tvmoniter"
-    }
+    
     for subset in ["val"]:
-        file_name = "instances_{}2017.json".format(subset)
-        file_path = join(PATH.DATA.COCO.ANNOS, file_name)
+        file_path = PATH.DATA.COCO.ANNOS.format(subset)
         coco = loadObject(file_path)
-        
-        classes = coco['categories']
-        for cls in classes:
-            name = cls['name']
-            cls_map += [conv[name]] if name in conv else [name]
 
+        # class map
+        classes = coco['categories']
+        _cls_map = {}
+        for idx, cls in enumerate(classes):
+            name = convert(cls['name'])
+            _cls_id = cls['id']
+            cls_id = getClassID(name, cls_map)
+            if cls_id is None:
+                # new class not exists in class_map
+                cls_map.append(name)
+                _cls_map[_cls_id] = len(cls_map) - 1
+            else:
+                _cls_map[_cls_id] = cls_id
+                
         annos = {}
         for anno in coco['annotations']:
             img_id = anno['image_id']
-            cls = anno['category_id']
+            cls = _cls_map[anno['category_id']]
             if img_id not in annos:
                 annos[img_id] = set()
             annos[img_id].add(cls)

@@ -42,7 +42,7 @@ def loadImage(directory, file_name, mode="BGR"):
     try:
         img = cv2.imread(path)
         if img is None:
-            raise Exception("Error: failed to load image {}".format(file_name))
+            raise Exception("Error: failed to load image {}".format(path))
         else:
             if mode == "RGB":
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
