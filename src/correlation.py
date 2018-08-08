@@ -7,6 +7,7 @@ To analyse the statistical correlation between unit and unit (unit and classific
 
 
 import os, sys
+import numpy as np
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -26,6 +27,8 @@ from utils.dissection.activ_processor import activAttrs
 Activ Attrs Processing
 
 '''
+
+def split(dic, keys)
 
 def integrate(data, values):
     
@@ -58,5 +61,10 @@ if __name__ == "__main__":
             conv_activs, cls_activs = split(activ_maps, cls_layers)
             conv_attrs = activAttrs(conv_activs)
             
-            integrate(data, conv_attrs+cls_activs)
+            integrate(data, {**conv_attrs, **cls_activs})
+
+        data = {k : np.asarray(v) for k, v in data.items()}
+        saveObject(data, data_path)
         
+    print ("Correlation: analysis begin")
+    
