@@ -63,7 +63,7 @@ def mapPASCAL(maps, source):
     img_ids += data
     
     # class map
-    for img_id in data[:100]:
+    for img_id in data:
         file_name = img_id[0] + ".mat"
         parsePASCALPartAnno(anno_dir,
                             file_name,
@@ -74,7 +74,7 @@ def mapCOCO(maps, source):
     print ("Mapping MS-COCO dataset...")
     img_ids, cls_map, img_cls_map = maps
     
-    for subset in ["val"]:
+    for subset in ["val", "train"]:
         file_path = PATH.DATA.COCO.ANNOS.format(subset)
         coco = loadObject(file_path)
 
