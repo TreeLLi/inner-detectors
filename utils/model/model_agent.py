@@ -43,6 +43,9 @@ class ModelAgent:
             self.demodel = DeConvNet(self.model)
             self.demodel.build(input_size)
 
+    def getLayers(self):
+        return self.model.layers
+            
     def getFieldmaps(self, file_path=None):
         if self.field_maps is not None:
             return self.field_maps
@@ -81,10 +84,14 @@ class ModelAgent:
         activ_maps = {}
         for layer, layer_activ_maps in results['activs'].items():
             # the dimensions of activation maps: (img_num, width, length, filter_num)
-            unit_num = layer_activ_maps.shape[3]
+            unit_num = layer_activ_maps.shape[-1]
+            dim_num = len(layer_activ_maps.shape)
             for unit_idx in range(unit_num):
                 unit_id = unitOfLayer(layer, unit_idx)
-                activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
+                if dim_num == 4:
+                    activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
+                elif dim_num == 2:
+                    activ_maps[unit_id] = layer_activ_maps[:, unit_idx]
 
         if not self.deconv:
             return activ_maps

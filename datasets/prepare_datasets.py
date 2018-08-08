@@ -101,6 +101,8 @@ def mapCOCO(maps, source):
             annos[img_id].add(cls)
 
         data = sorted(list(annos.keys()))
+        # only count the image_id appearing in the annotations
+        # not all image_ids in coco['images']
         for img_id in data:
             img_cls = [img_id] + list(annos[img_id])
             img_cls_map.append(img_cls)

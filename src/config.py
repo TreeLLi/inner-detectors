@@ -101,6 +101,8 @@ if CONFIG.DIS.MODEL == "VGG16":
 
     PATH.OUT.UNIT_ATTRS = join(_vgg16_path, "unit_attrs.pkl")
     PATH.OUT.VERIFICATION = join(_vgg16_path, "verification")
+
+    PATH.OUT.UNIT_ACTIVS = join(_vgg16_path, "unit_activations.pkl")
     
 # model path
 _model_path = join(_root_path, "pre-models")
