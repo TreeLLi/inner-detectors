@@ -57,6 +57,13 @@ class TestActivProcessor(TestBase):
         self.assertEqual(attrs["pool5_1"], [[2], [3]])
         self.assertEqual(attrs["pool5_2"], [[0.0], [0.5]])
 
+    def test_pearson_coeff(self):
+        x = [1, 2, 3]
+        y = [1, 2, 3]
+
+        coeff, pvalue = correlation(x, y)
+        self.assertEqual(coeff, 1)
+        
 class TestUpsample(TestBase):
     def test_upsampleL(self):
         self.log()

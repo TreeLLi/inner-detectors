@@ -78,6 +78,9 @@ class TestBase(unittest.TestCase):
 
         return super(TestBase, self).assertListEqual(first, second, msg)
 
+    def assertContain(self, first, second, msg=None):
+        self.assertTrue(second in first, msg)
+    
     def assertEmpty(self, expr):
         return self.assertLength(expr, 0)
     

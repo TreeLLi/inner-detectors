@@ -224,7 +224,7 @@ nest = {
     }
 }
 ni = NestedIterator(nest)
-class TestNestedIter(TestBase):
+class TestIterator(TestBase):
     def test_get(self):
         val = ni.get([0,0])
         self.assertEqual(val, [1, 1.1, 1.1])
@@ -245,6 +245,13 @@ class TestNestedIter(TestBase):
         ni.increaseIndices()
         self.assertEqual(ni.indices, [1, 0])
         
-            
+    def test_pair_iterate(self):
+        dic = {1:1, 2:2, 3:3}
+        iteration = [set((unit_1, unit_2)) for unit_1, unit_2 in paired(dic)]
+        self.assertLength(iteration, 3)
+        self.assertContain(iteration, set((1, 2)))
+        self.assertContain(iteration, set((1, 3)))
+        self.assertContain(iteration, set((2, 3)))
+        
 if __name__ == "__main__":
     unittest.main()

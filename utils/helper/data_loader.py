@@ -125,22 +125,13 @@ class BatchLoader(object):
         self.batch_size = batch_size
         self.batch_id = 0
         self.progress = [0 for x in range(4)]
-        
-        # config data to be loaded
-        self.dataset = loadObject(PATH.DATA.IMG_MAP)
-        if amount is not None and len(self.dataset) > amount:
-            # discard remaining datasets, since the specified amount is reached
-            self.data = self.dataset[:amount]
-            self.backup = self.dataset[amount:]
-        else:
-            self.data = self.dataset.copy()
-            self.backup = None    
-        self.amount = len(self.data)
 
         # initlisation for particular sources
         if any(isCOCO(source) for source in sources):
-            self.initSourceCOCO()
-        
+            self.cocos = {}
+
+        self.initDatasets(sources, amount)
+            
         # special loading mode
         self.mode = mode
         if mode == "classes":
@@ -156,13 +147,23 @@ class BatchLoader(object):
         else:
             self.cls_counts = {cls : 1 for cls in classes}
 
-    def initSourceCOCO(self):
-        dir_path = PATH.DATA.COCO.ANNOS
-        self.cocos = {}
-        for subset in ["train", "val"]:
-            file_path = dir_path.format(subset)
-            self.cocos[subset] = COCO(file_path)
-
+    def initDatasets(self, sources, amount):
+        # config data to be loaded
+        _dataset = loadObject(PATH.DATA.IMG_MAP)
+        self.dataset = []
+        # filter samples not belonging to target sources
+        for _data in _dataset:
+            if _data[2] in sources:
+                self.dataset.append(_data)
+        
+        if amount is not None and len(self.dataset) > amount:
+            # discard remaining datasets, since the specified amount is reached
+            self.data = self.dataset[:amount]
+            self.backup = self.dataset[amount:]
+        else:
+            self.data = self.dataset.copy()
+            self.backup = None    
+        self.amount = len(self.data)
     
     '''
     Attributes
@@ -180,6 +181,19 @@ class BatchLoader(object):
     def size(self):
         return len(self.data)
 
+    def getCOCO(self, subset):
+        # lazy loading to avoid long waiting time for initialisation
+        if subset in self.cocos:
+            return self.cocos[subset]
+        elif subset in ["train", "val"]:
+            dir_path = PATH.DATA.COCO.ANNOS
+            file_path = dir_path.format(subset)
+            self.cocos[subset] = COCO(file_path)
+            return self.cocos[subset]
+        else:
+            raise Exception("Error: invalid subset key for MS COCO")
+        
+    
     '''
     Data Loading
 
@@ -220,7 +234,7 @@ class BatchLoader(object):
                     img, annos = fetchDataFromPASCAL(img_id)
                 elif isCOCO(img_source):
                     subset = sample[3]
-                    coco = self.cocos[subset]
+                    coco = self.getCOCO(subset)
                     img, annos = fetchDataFromCOCO(img_id, subset, coco)
                     
                 img = preprocessImage(img)

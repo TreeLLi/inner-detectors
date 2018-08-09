@@ -182,3 +182,44 @@ class NestedIterator(Iterator):
         else:
             self.indices[len(indices)-1] = 0
             self.increaseIndices(indices[:-1])
+
+            
+'''
+Pair Iteration
+
+'''
+
+def paired(dic):
+    return PairIterator(dic)
+
+class PairIterator(Iterator):
+
+    def __init__(self, dic):
+        self.data = dic
+        self.keys = list(dic.keys())
+        self.indices = [0, 1]
+
+        if len(self.keys) <= 1:
+            raise Exception("Error: invalid data for PairIterator")
+        
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if not self.indices:
+            raise StopIteration
+        
+        iter = [self.keys[i] for i in self.indices]
+        self.increaseIndices()
+
+        return iter
+
+    def increaseIndices(self):
+        num = len(self.keys)
+        self.indices[1] += 1
+        if self.indices[1] >= num:
+            self.indices[0] += 1
+            self.indices[1] = self.indices[0]+1
+
+        if any(i >= num for i in self.indices):
+            self.indices = None

@@ -12,6 +12,9 @@ else
 	python -W ignore 'src/verifier.py'
 endif
 
+correlat:
+	python -W ignore 'src/correlation.py'
+
 # preparation
 data:
 	python -W ignore 'datasets/prepare_datasets.py'
@@ -34,6 +37,9 @@ testmatcher:
 
 testverifier:
 	python -W ignore 'test/verifier_test.py' $(m)
+
+testcorrelat:
+	python -W ignore 'test/correlat_test.py' $(m)
 
 testmodel:
 	python -W ignore 'test/model_test.py' $(m)

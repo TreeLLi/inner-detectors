@@ -11,6 +11,8 @@ currently supporting linear interpolation
 import os, sys
 import numpy as np
 
+from scipy.stats import pearsonr
+
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
@@ -47,11 +49,15 @@ Activation Attributes
 
 '''
 
+ATTRS = ["mean"]
 def activAttrs(activ_maps):
     attrs = {}
     for unit_id, unit_activs in activ_maps.items():
         # attribute 0 - mean of activation values
         attrs[unit_id] = [[np.mean(activ)] for activ in unit_activs]
         # TODO - measure more attrs of activation
-        
     return attrs
+
+def correlation(x, y):
+    coeff, pvalue = pearsonr(x, y)
+    return coeff, pvalue
