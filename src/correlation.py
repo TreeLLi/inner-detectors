@@ -59,6 +59,30 @@ def integrate(dic, _dic):
 
 
 '''
+Match results processing
+
+'''
+
+def organise(matches):
+    _matches = {}
+    for ccp, unit_id, m in nested(matches):
+        if ccp not in _matches:
+            _matches[ccp] = {}
+        ccp_m = _matches[ccp]
+
+        layer, unit = splitUnitID(unit_id)
+        if layer not in ccp_m:
+            ccp_m[layer] = {}
+        layer_m = ccp_m[layer]
+        layer_m[unit] = m[0]
+
+    for ccp, layer, m in nested(_matches):
+        _matches[ccp][layer] = sortDict(m)
+
+    return _matches
+
+
+'''
 Repprt & Figures
 
 '''
@@ -102,30 +126,33 @@ if __name__ == "__main__":
         
     print ("Correlation: analysis begin")
     #split activation attributes series
-    conv_attrs, cls_attrs = splitDic(data, ["prob", "fc8"])
-    conv_attrs = splitAttr(conv_attrs)
-    for attr_idx, attr_name in zip(conv_attrs, ATTRS):
-        _attrs = {**conv_attrs[attr_idx], **cls_attrs}
-        corrs = {}
-        for unit_1, unit_2 in paired(_attrs):
-            name = "{}-{}".format(unit_1, unit_2)
+    # conv_attrs, cls_attrs = splitDic(data, ["prob", "fc8"])
+    # conv_attrs = splitAttr(conv_attrs)
+    # for attr_idx, attr_name in zip(conv_attrs, ATTRS):
+    #     _attrs = {**conv_attrs[attr_idx], **cls_attrs}
+    #     corrs = {}
+    #     for unit_1, unit_2 in paired(_attrs):
+    #         name = "{}-{}".format(unit_1, unit_2)
 
-            x = _attrs[unit_1]
-            y = _attrs[unit_2]
-            coef, _ = correlation(x, y)
-            if unit_1 not in corrs:
-                corrs[unit_1] = {}
-            corrs[unit_1][unit_2] = coef
-            if unit_2 not in corrs:
-                corrs[unit_2] = {}
-            corrs[unit_2][unit_1] = coef
+    #         x = _attrs[unit_1]
+    #         y = _attrs[unit_2]
+    #         coef, _ = correlation(x, y)
+    #         if unit_1 not in corrs:
+    #             corrs[unit_1] = {}
+    #         corrs[unit_1][unit_2] = coef
+    #         if unit_2 not in corrs:
+    #             corrs[unit_2] = {}
+    #         corrs[unit_2][unit_1] = coef
             
-            # draw correlation spot figure
-            # plt = plotFigure(_attrs[unit_1],
-            #                  _attrs[unit_2],
-            #                  title=name,
-            #                  form="spot")
-            # file_path = os.path.join(PATH.OUT.COR.FIGURE, name+".png")
-            # saveFigure(plt, file_path)
+    #         # draw correlation spot figure
+    #         # plt = plotFigure(_attrs[unit_1],
+    #         #                  _attrs[unit_2],
+    #         #                  title=name,
+    #         #                  form="spot")
+    #         # file_path = os.path.join(PATH.OUT.COR.FIGURE, name+".png")
+    #         # saveFigure(plt, file_path)
 
-        reportCorrelations(corrs)
+    #     reportCorrelations(corrs)
+
+    matches = loadObject(PATH.DATA.CONCEPT_MATCHES)
+    matches = organise(matches)
