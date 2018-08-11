@@ -22,6 +22,7 @@ from utils.helper.dstruct_helper import splitDict
 from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
 from utils.dissection.helper import iou
+from utils.dissection.activ_processor import reflect
 
     
 '''
@@ -202,15 +203,9 @@ Main program
 
 if __name__ == "__main__":
     bl = BatchLoader(amount=10)
-    probe_layers = loadObject(PATH.MODEL.PROBE)
-    reflect_mode = CONFIG.DIS.REFLECT
-    
-    if reflect_mode == "interpolation":
-        from utils.dissection.activ_processor import reflect
-        model = ModelAgent()
-        field_maps = model.getFieldmaps()
-    elif reflect_mode == "deconvnet":
-        model = ModelAgent(deconv=True)
+    probe_layers = loadObject(PATH.MODEL.PROBE)    
+    model = ModelAgent()
+    field_maps = model.getFieldmaps()
 
     pool = Pool()
     num = pool._processes
@@ -220,22 +215,14 @@ if __name__ == "__main__":
         images = batch[1]
         annos = batch[2]
 
-        if reflect_mode == "interpolation":
-            activ_maps = model.getActivMaps(images, probe_layers)
-            activ_maps = splitDict(activ_maps, num)
-            params = [(amap, field_maps, annos) for amap in activ_maps]
-            print ("Reflecting and matching activation maps...")
-            batch_matches = pool.starmap(reflectAndMatch, params)
-            batch_match = {}
-            for m in batch_matches:
-                batch_match = {**batch_match, **m}
-        elif reflect_mode == "deconvnet":
-            activ_maps, switches = model.getActivMaps(images, probe_layers)
-            print ("Reflecting back via DeConvNet...")
-            # TEST - reduce running time
-            activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
-            activ_maps = model.getDeconvMaps(activ_maps, switches)
-            batch_match = matchActivsAnnos(activ_maps, annos)
+        activ_maps = model.getActivMaps(images, probe_layers)
+        activ_maps = splitDict(activ_maps, num)
+        params = [(amap, field_maps, annos) for amap in activ_maps]
+        print ("Reflecting and matching activation maps...")
+        batch_matches = pool.starmap(reflectAndMatch, params)
+        batch_match = {}
+        for m in batch_matches:
+            batch_match = {**batch_match, **m}
             
         print ("Integrating matches results of a batch into final results ...")
         matches = combineMatches(matches, batch_match)
