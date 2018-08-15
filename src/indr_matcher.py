@@ -16,13 +16,13 @@ if root_path not in sys.path:
 
 from src.config import CONFIG, PATH
 
-from utils.helper.data_loader import BatchLoader, weightedVal
+from utils.helper.data_loader import BatchLoader
 from utils.helper.data_mapper import getClassName
 from utils.helper.dstruct_helper import splitDict
 from utils.helper.file_manager import saveObject, loadObject
 from utils.model.model_agent import ModelAgent
-from utils.dissection.helper import iou
 from utils.dissection.activ_processor import reflect
+from utils.dissection.identification import matchActivsAnnos, combineMatches
 
     
 '''
@@ -38,65 +38,6 @@ def reflectAndMatch(activ_maps, field_maps, annos):
     ref_activ_maps = None
 
     return batch_matches
-
-# match activation maps of all units, of a batch of images,
-# with all annotations of corresponding images
-def matchActivsAnnos(activs, annos):
-    matches = {}
-    for unit, activs in activs.items():
-        unit_matches = []
-        for img_idx, activ in enumerate(activs):
-            img_annos = annos[img_idx]
-            unit_img_matches = matchActivAnnos(activ, img_annos)
-            unit_matches.append(unit_img_matches)
-        matches[unit] = unit_matches
-
-    return matches
-
-
-# match a single activation map with annotations from one image
-def matchActivAnnos(activ, annos):
-    matches = {}
-    for anno in annos:
-        concept = anno[0]
-        mask = anno[1]
-
-        if concept not in matches:
-            matches[concept] = [iou(activ, mask), 1]
-        else:
-            # multiple same concepts exist in the same image
-            iou_1 = matches[concept][0]
-            count_1 = matches[concept][1]
-            iou_2 = iou(activ, mask)
-            matches[concept][0] = weightedVal(iou_1, count_1, iou_2)
-            matches[concept][1] += 1
-
-    return matches
-
-# combine two matches results
-def combineMatches(matches, batch_matches):
-    if batch_matches is None:
-        return matches
-    elif matches is None:
-        matches = {}
-        
-    for unit, batch_match in batch_matches.items():
-        if unit not in matches:
-            matches[unit] = {}
-
-        unit_match = matches[unit]
-        for img_match in batch_match:
-            for concept, cct_match in img_match.items():
-                if concept not in unit_match:
-                    unit_match[concept] = cct_match
-                else:
-                    iou_1 = cct_match[0]
-                    count_1 = cct_match[1]
-                    iou_2 = unit_match[concept][0]
-                    count_2 = unit_match[concept][1]
-                    unit_match[concept][0] = weightedVal(iou_1, count_1, iou_2, count_2)
-                    unit_match[concept][1] += count_1
-    return matches
 
 
 '''
@@ -202,7 +143,7 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=10)
+    bl = BatchLoader(amount=100)
     probe_layers = loadObject(PATH.MODEL.PROBE)    
     model = ModelAgent()
     field_maps = model.getFieldmaps()

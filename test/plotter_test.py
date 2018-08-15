@@ -16,6 +16,9 @@ from src.config import PATH
 
 from utils.helper.plotter import *
 from utils.helper.file_manager import saveImage, saveFigure
+from utils.helper.data_loader import BatchLoader
+from utils.helper.data_mapper import getClassName
+
 
 '''
 Test Plotter
@@ -51,8 +54,20 @@ class TestPlotter(TestBase):
         img = maskImage(img, masks, alpha=0.6)
         # cv2.imshow("test plotter", img)
         # cv2.waitKey(0)
-        saveImage(img, os.path.join(root_path, "test_plotter.jpg"))
+        saveImage(img, os.path.join(root_path, "test_plotter.png"))
 
+    def test_reveal_mask(self):
+        self.log()
+        bl = BatchLoader(amount=1)
+        batch = bl.nextBatch()
+        img = batch[1][0]
+        annos = batch[2][0]
+        for anno in annos:
+            aid, mask = anno
+            output = revealMask(img, mask)
+            path = os.path.join(PATH.TEST.ROOT, "{}.png".format(getClassName(aid, full=True)))
+            saveImage(output, path)
+        
     def test_plot_figure(self):
         self.log()
         x = np.asarray([i for i in range(0, 10)])

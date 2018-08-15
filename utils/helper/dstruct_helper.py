@@ -35,11 +35,13 @@ Sorting, Filter
 '''
 
 # result is returned as a list of tuples (key, val)
-def sortDict(dic, by_key=False, indices=[], descending=True):
+def sortDict(dic, by_key=False, indices=[], descending=True, merge=False):
     # sorted by dictionary values
     _indices = [0] if by_key else [1]
     _indices += indices
     sort = sorted(dic.items(), key=getter(_indices), reverse=descending)
+    if merge:
+        sort = [(_sort[0], ) + tuple(_sort[1]) for _sort in sort]
     return sort
 
 class getter:
@@ -64,7 +66,7 @@ Reverse
 
 def reverseDict(dic):
     rever = {}
-    for key_1, key_2, val in nested(dic):
+    for key_1, key_2, val in nested(dic, depth=2):
         if key_2 not in rever:
             rever[key_2] = {key_1 : val}
         else:
@@ -111,6 +113,18 @@ def splitNumber(num, amount=None, base=None):
     else:
         raise Exception("Error: invalid split number parameters.")
     return split
+
+
+'''
+Merge
+
+'''
+
+def mergeDict(dics):
+    dic = {}
+    for _dic in dics:
+        dic = {**dic, **_dic}
+    return dic
 
 
 '''

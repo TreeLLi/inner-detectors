@@ -149,10 +149,10 @@ class BatchLoader(object):
 
     def initDatasets(self, sources, amount):
         # config data to be loaded
-        _dataset = loadObject(PATH.DATA.IMG_MAP)
+        self.database = loadObject(PATH.DATA.IMG_MAP)
         self.dataset = []
         # filter samples not belonging to target sources
-        for _data in _dataset:
+        for _data in self.database:
             if _data[2] in sources:
                 self.dataset.append(_data)
         
@@ -181,6 +181,21 @@ class BatchLoader(object):
     def size(self):
         return len(self.data)
 
+    @property
+    def img_infos(self):
+        if hasattr(self, '_img_infos'):
+            return self._img_infos
+        else:
+            img_infos = loadObject(PATH.DATA.IMG_CLS_MAP)
+            self._img_infos = []
+            for info in img_infos:
+                _info = {}
+                _info['id'] = info[0]
+                _info['classes'] = info[1:]
+                self._img_infos.append(_info)
+                
+            return self._img_infos
+    
     def getCOCO(self, subset):
         # lazy loading to avoid long waiting time for initialisation
         if subset in self.cocos:
@@ -192,8 +207,8 @@ class BatchLoader(object):
             return self.cocos[subset]
         else:
             raise Exception("Error: invalid subset key for MS COCO")
+
         
-    
     '''
     Data Loading
 
@@ -269,7 +284,23 @@ class BatchLoader(object):
         self.progress[2] = len(batch[1])
         return batch
 
-    
+
+    '''
+    Image info getter
+
+    '''
+
+    def getImageInfo(self, img_idx):
+        if isinstance(img_idx, list):
+            infos = [self.getImageInfo(idx) for idx in img_idx]
+            return infos
+        elif isinstance(img_idx, int):
+            info = self.img_infos[img_idx]
+            return info
+        else:
+            raise Exception("Error: invalid data type for accessing image info.")
+
+        
     '''
     Finish
 

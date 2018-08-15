@@ -63,3 +63,23 @@ def quantile(a, per, sequence=False):
         for _a in a:
             quans.append(np.percentile(_a, per, interpolation="linear"))
         return quans
+
+
+'''
+Filter
+
+'''
+
+def quanFilter(a, per, sequence=False):
+    quan = quantile(a, per, sequence)
+    _filter(a, quan, sequence)
+
+def _filter(a, quan, sequence=False):
+    if not sequence:
+        a[a < quan] = 0
+    elif isinstance(quan, list):
+        for _a, _quan in zip(a, quan):
+            _filter(_a, _quan)
+    else:
+        for _a in a:
+            _filter(_a, quan)

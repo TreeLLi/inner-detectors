@@ -198,3 +198,15 @@ def splitUnitID(unit_id):
         layer = "{}_{}".format(spl[0], spl[1])
         unit = int(spl[2])
         return layer, unit
+    else:
+        raise Exception("Error: invalid form of unit id.")
+    
+def isUnitID(unit_id):
+    try:
+        layer, unit = splitUnitID(unit_id)
+        if int(unit) >= 0:
+            return True
+        else:
+            return False
+    except:
+        return False

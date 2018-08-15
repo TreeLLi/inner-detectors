@@ -15,6 +15,9 @@ endif
 correlat:
 	python -W ignore 'src/correlation.py'
 
+visualise:
+	python -W ignore 'src/visualisation.py'
+
 # preparation
 data:
 	python -W ignore 'datasets/prepare_datasets.py'
@@ -37,6 +40,9 @@ testmatcher:
 
 testverifier:
 	python -W ignore 'test/verifier_test.py' $(m)
+
+testvisual:
+	python -W ignore 'test/visual_test.py' $(m)
 
 testcorrelat:
 	python -W ignore 'test/correlat_test.py' $(m)

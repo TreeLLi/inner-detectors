@@ -36,6 +36,18 @@ def maskImage(img, masks, alpha=0.5, labels=None):
         
     return output
 
+def revealMask(img, mask, alpha=0.5):
+    output = img.copy()
+
+    indices = np.argwhere(mask > 0)
+    overlay = np.ones_like(img)
+    overlay[indices[:, 0], indices[:, 1]] = img[indices[:, 0], indices[:, 1]]
+    # overlay *= 255
+
+    cv2.addWeighted(overlay, alpha, img, 1-alpha, 0, output)
+    return output
+
+
 '''
 Figure plot
 

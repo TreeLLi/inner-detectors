@@ -13,7 +13,15 @@ if root_path not in sys.path:
 
 from test_helper import TestBase
 from src.indr_matcher import *
+from src.config import PATH
+from utils.dissection.identification import *
+from utils.helper.file_manager import loadObject
 
+
+'''
+Test Suits
+
+'''
 
 class TestMatcher(TestBase):
 
@@ -165,6 +173,36 @@ class TestMatcher(TestBase):
         self.assertLength(splited, 3)
         amount = sum([len(x) for x in splited])
         self.assertEqual(amount, 4)
+
+class TestIdent(TestBase):
+    def test_organise(self):
+        self.log()
+        matches = {
+            "leg" : {
+                "conv5_1_0" : (1, 2),
+                "conv5_1_2" : (0, 2),
+                "conv5_2_0" : (1, 2)
+            },
+            "face" : {
+                "conv5_1_0" : (1, 2),
+                "conv5_1_2" : (1, 2),
+                "conv4_2_0" : (1, 2)
+            }
+        }
+        organised = organiseMatches(matches)
+        self.assertEqual(organised['leg']['conv5_2'][0], (0, (1, 2)))
+        self.assertEqual(organised['leg']['conv5_1'][1], (2, (0, 2)))
+
+    def test_identification(self):
+        self.log()
+        
+        # matches = loadObject(PATH.OUT.IDE.DATA.UNIT)
+        # organised_0 = identification(matches, mode='concept')
+        # organised_1 = identification(mode='concept')
+        # self.assertEqual(organised_0, organised_1)
+
+        organised_2 = identification(top=10, mode='concept', organise=True)
+        print (organised_2[10]['conv5_3'])
         
 if __name__ == "__main__":
     unittest.main()

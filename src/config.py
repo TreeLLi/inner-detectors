@@ -97,13 +97,24 @@ if CONFIG.DIS.MODEL == "VGG16":
     PATH.OUT.UNIT_ATTRS = join(_vgg16_path, "unit_attrs.pkl")
     PATH.OUT.VERIFICATION = join(_vgg16_path, "verification")
 
+    # identification
+    PATH.OUT.IDE.ROOT = join(_vgg16_path, "identification")
+    PATH.OUT.IDE.REPORT.ROOT = join(PATH.OUT.IDE.ROOT, "report")
+    PATH.OUT.IDE.REPORT.UNIT = join(PATH.OUT.IDE.REPORT.ROOT, "vgg16_unit_ident.txt")
+    PATH.OUT.IDE.REPORT.CONCEPT = join(PATH.OUT.IDE.REPORT.ROOT, "vgg16_concept_ident.txt")
+    PATH.OUT.IDE.DATA.ROOT = join(PATH.OUT.IDE.ROOT, "data")
+    PATH.OUT.IDE.DATA.UNIT = join(PATH.OUT.IDE.DATA.ROOT, "vgg16_unit_matches.pkl")
+    PATH.OUT.IDE.DATA.CONCEPT = join(PATH.OUT.IDE.DATA.ROOT, "vgg16_concept_matches.pkl")
+
+    # visualistion
+    PATH.OUT.VIS.ROOT = join(_vgg16_path, "visualisation")
+    
     # correlation results
     PATH.OUT.COR.ROOT = join(_vgg16_path, "correlation")
     PATH.OUT.COR.ACTIVS = join(PATH.OUT.COR.ROOT, "unit_activations.pkl")
     PATH.OUT.COR.FIGURE = join(PATH.OUT.COR.ROOT, "figures")
     PATH.OUT.COR.REPORT = join(PATH.OUT.COR.ROOT, "correlation_report.txt")
-    
-    
+
 # model path
 _model_path = join(_root_path, "pre-models")
 
