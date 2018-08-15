@@ -63,7 +63,7 @@ class ModelAgent:
         self.field_maps = field_maps
         return self.field_maps
             
-    def getActivMaps(self, imgs, layers):
+    def getActivMaps(self, imgs, layers=None, prob=False):
         model = self.model
         imgs = np.asarray(imgs) if not isinstance(imgs, np.ndarray) else imgs
         # generate activation data by forward pass
@@ -72,32 +72,50 @@ class ModelAgent:
             self.input_size = imgs.shape[0]
             model.build(self.input_size)
 
-        fetches = {"activs" : {}}
-        for layer in layers:
-            fetches['activs'][layer] = model.getTensor(layer)
-        if self.deconv:
-            fetches['switches'] = model.max_pool_switches
+        fetches = {}
+        if layers:
+            fetches['activs'] = {}
+            for layer in layers:
+                fetches['activs'][layer] = model.getTensor(layer)
+            if self.deconv:
+                fetches['switches'] = model.max_pool_switches
+        if prob:
+            fetches['prob'] = model.getProbTensor()
+
+        if not fetches:
+            raise Exception("Error: no outputs are specified for getActivMaps.")
+        
         feed_dict = model.createFeedDict(imgs)
         with tf.Session() as sess:
             results = sess.run(fetches, feed_dict=feed_dict)
 
-        activ_maps = {}
-        for layer, layer_activ_maps in results['activs'].items():
-            # the dimensions of activation maps: (img_num, width, length, filter_num)
-            unit_num = layer_activ_maps.shape[-1]
-            dim_num = len(layer_activ_maps.shape)
-            for unit_idx in range(unit_num):
-                unit_id = unitOfLayer(layer, unit_idx)
-                if dim_num == 4:
-                    activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
-                elif dim_num == 2:
-                    activ_maps[unit_id] = layer_activ_maps[:, unit_idx]
+        if 'activs' in results:
+            activ_maps = {}
+            for layer, layer_activ_maps in results['activs'].items():
+                # the dimensions of activation maps: (img_num, width, length, filter_num)
+                unit_num = layer_activ_maps.shape[-1]
+                dim_num = len(layer_activ_maps.shape)
+                for unit_idx in range(unit_num):
+                    unit_id = unitOfLayer(layer, unit_idx)
+                    if dim_num == 4:
+                        activ_maps[unit_id] = layer_activ_maps[:, :, :, unit_idx]
+                    elif dim_num == 2:
+                        activ_maps[unit_id] = layer_activ_maps[:, unit_idx]
 
-        if not self.deconv:
-            return activ_maps
+        _results = []
+        if 'activs' in results:
+            _results.append(activ_maps)
+        if 'switches' in results:
+            _results.append(results['switches'])
+        if prob:
+            cls = np.argmax(results['prob'], axis=1)
+            _results.append(cls)
+
+        if len(_results) == 1:
+            return _results[0]
         else:
-            return activ_maps, results['switches']
-
+            return _results
+            
     def getDeconvMaps(self, activ_maps, switches):
         switch_feed = {self.demodel.getSwitchTensor(layer) : switch
                      for layer, switch in switches.items()}

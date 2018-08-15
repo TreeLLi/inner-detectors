@@ -42,17 +42,22 @@ class Net:
             return self.tensors["input"]
             
         layers = self.layers
-        for idx, lay in enumerate(layers):
-            if lay != layer:
+        for idx, _layer in enumerate(layers):
+            if _layer != layer:
                 continue
             # config of previous layer
-            pre_lay = layers[idx-1]
-            config = self.configs[pre_lay]
+            pre_layer = layers[idx-1]
+            config = self.configs[pre_layer]
             if config.type == "fc":
                 return self.tensors["input"]
             else:
-                return self.tensors[pre_lay]
-    
+                return self.tensors[pre_layer]
+
+    def getProbTensor(self):
+        layer = self.layers[-1]
+        tensor = self.getTensor(layer)
+        return tensor
+            
     def createFeedDict(self, data, layer=None, feed_dict=None):
         input_tensor = self.getInputTensor(layer)
         fd = {input_tensor : data}

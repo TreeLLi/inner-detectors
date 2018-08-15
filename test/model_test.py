@@ -24,32 +24,7 @@ from utils.helper.file_manager import saveImage
 from utils.dissection.upsample import upsampled_shape
 from test_helper import TestBase
 from src.config import PATH
-
-
-'''
-Test CONVNET model
-
-'''
-
-convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
-class TestConvNet(TestBase):
-    def test_init(self):
-        self.log()
-        self.assertIsNotNone(convnet)
-        
-    def test_eval(self):
-        self.log()
-        bl = BatchLoader(amount=10)
-        batch = bl.nextBatch()
-        imgs = batch[1]
-
-        convnet.build(10)
-        feed_dict = convnet.createFeedDict(imgs)
-        
-        with tf.Session() as sess:
-            prob = sess.run(convnet.getTensor('prob'), feed_dict=feed_dict)
-        print (prob.shape, np.argmax(prob, axis=1))
-        
+       
         
 '''
 Test ModelAgent 
@@ -82,6 +57,10 @@ class TestModelAgent(TestBase):
         self.assertEqual(activ_maps['pool5_1'].shape, (1, 7, 7))
         self.assertLength(switches, 5)
 
+        probs = agent_2.getActivMaps(imgs, prob=True)
+        self.assertLength(probs, 1)
+        print (probs)
+        
     def test_layer_fieldmaps(self):
         self.log()
         field_maps = layerFieldmaps(agent.model)
@@ -142,8 +121,38 @@ class TestModelAgent(TestBase):
         activ_maps, switches = agent.getActivMaps(imgs, probe_layer)
         activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
         ref_activ_maps = agent.getDeconvMaps(activ_maps, switches)
-        self.assertShape(ref_activ_maps["pool5_1"], [num] + CONFIG.MODEL.INPUT_DIM)
+        self.assertShape(ref_activ_maps["pool5_1"], (num, ) + CONFIG.MODEL.INPUT_DIM)
+
+
+'''
+Test ConvNet model
+
+'''
+
+convnet = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=True)
+class TestConvNet(TestBase):
+    def test_init(self):
+        self.log()
+        self.assertIsNotNone(convnet)
         
+    def test_eval(self):
+        self.log()
+        bl = BatchLoader(amount=10)
+        batch = bl.nextBatch()
+        imgs = batch[1]
+
+        convnet.build(10)
+        feed_dict = convnet.createFeedDict(imgs)
+        
+        with tf.Session() as sess:
+            prob = sess.run(convnet.getTensor('prob'), feed_dict=feed_dict)
+        print (prob.shape, np.argmax(prob, axis=1))
+ 
+        
+'''
+DeConvNet
+
+'''
         
 # agent = ModelAgent(input_size=10, deconv=True)
 # demodel = agent.demodel
