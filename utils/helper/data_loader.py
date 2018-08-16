@@ -13,7 +13,7 @@ import numpy as np
 import time, datetime
 
 from os.path import exists
-from utils.coco.pycocotools.coco import COCO
+from utils.cocoapi.PythonAPI.pycocotools.coco import COCO
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")

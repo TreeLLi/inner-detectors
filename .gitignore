@@ -13,6 +13,10 @@ pre-models
 # output
 output/
 
+# utils COCOApi system-based files
+utils/cocoapi/PythonAPI/pycocotools/_mask.c
+utils/cocoapi/PythonAPI/pycocotools/*.so
+
 # test
 # ignore all sub-folders
 test/*/*
