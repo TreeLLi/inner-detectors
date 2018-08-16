@@ -125,18 +125,17 @@ class BatchLoader(object):
         self.batch_size = batch_size
         self.batch_id = 0
         self.progress = [0 for x in range(4)]
-
+        
         # initlisation for particular sources
         if any(isCOCO(source) for source in sources):
             self.cocos = {}
 
         self.initDatasets(sources, amount)
-            
         # special loading mode
         self.mode = mode
         if mode == "classes":
             self.initModeClasses()
-
+            
         print ("Data Loader: finish initialisation.")
 
     def initModeClasses(self):
@@ -173,7 +172,7 @@ class BatchLoader(object):
     def __bool__(self):
         finished = self.size <= 0
         if finished:
-            self.finish()
+            self._finish()
 
         return not finished
 
@@ -271,7 +270,7 @@ class BatchLoader(object):
                             self.cls_counts[cls] -= 1
                         if all(c <= 0 for c in self.cls_counts.values()):
                             # finished, exist batch loading,
-                            self.data = []
+                            self.finish()
                             num = 0
                             break
             if self.backup:
@@ -305,8 +304,11 @@ class BatchLoader(object):
     Finish
 
     '''
-    
+
     def finish(self):
+        self.data = []
+    
+    def _finish(self):
         if not exists(PATH.DATA.CLS_MAP):
             print ("Class map: saved.")
             saveObject(class_map, PATH.DATA.CLS_MAP)
