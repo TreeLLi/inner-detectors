@@ -12,7 +12,8 @@ from src.config import PATH
 from utils.dissection.helper import iou
 from utils.model.model_agent import isUnitID, splitUnitID
 from utils.helper.data_loader import weightedVal
-from utils.helper.dstruct_helper import nested, sortDict, reverseDict
+from utils.helper.data_mapper import getClasses
+from utils.helper.dstruct_helper import nested, sortDict, reverseDict, filterDict
 from utils.helper.file_manager import loadObject
 
 
@@ -21,7 +22,26 @@ Identification results
 
 '''
 
-def identification(matches=None, top=None, mode='unit', organise=False):
+IDENT = None
+def conceptsOfUnit(unit_id, top=None, keep_info=False):
+    global IDENT
+    if not IDENT:
+        IDENT = loadIdent(sorting=True, filtering=0)
+    concepts = IDENT[unit_id]
+    if top:
+        concepts = concepts[:top] if top > 0 else concepts[top:]
+    if not keep_info:
+        # remove iou and count info
+        concepts = [ccp[0] for ccp in concepts]
+    
+    return concepts
+
+def loadIdent(matches=None,
+              mode='unit',
+              organise=False,
+              sorting=False,
+              top=None,
+              filtering=None):
     start = time.time()
     
     if matches is None:
@@ -44,14 +64,24 @@ def identification(matches=None, top=None, mode='unit', organise=False):
     elif mode == 'concept' and isUnitForm(matches):
         print ("Matches: convert from concepts to units.")
         matches = reverseDict(matches)
-    
+
+    if filtering:
+        if isinstance(filtering, int):
+            filtering = getClasses(order=filtering)            
+        matches = filterDict(matches, filtering)
+            
     # sorting
-    if mode=='concept' and organise:
-        matches = organiseMatches(matches, top)
-    elif top:
-        matches = {k : sortDict(v, indices=[0], merge=True)[:top] for k, v in matches.items()}
-    else:
+    if organise:
+        if mode == 'concept':
+            matches = organiseMatches(matches, top)
+        else:
+            raise Exception("Error: conflict paramters for 'organise' and 'mode'.")
+    elif sorting:
         matches = {k : sortDict(v, indices=[0], merge=True) for k, v in matches.items()}
+        if top and top >= 0:
+            matches = {k : v[:top] for k, v in matches.items()}
+        elif top and top < 0:
+            matches = {k : v[top:] for k, v in matches.items()}
 
     end = time.time()
     print ("Identification: finished {}s.".format(int(end-start)))

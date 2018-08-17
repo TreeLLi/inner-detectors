@@ -122,7 +122,7 @@ class TestModelAgent(TestBase):
         activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
         ref_activ_maps = agent.getDeconvMaps(activ_maps, switches)
         self.assertShape(ref_activ_maps["pool5_1"], (num, ) + CONFIG.MODEL.INPUT_DIM)
-
+        
 
 '''
 Test ConvNet model

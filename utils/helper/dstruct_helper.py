@@ -34,6 +34,21 @@ Sorting, Filter
 
 '''
 
+def filterDict(dic, keep, depth=None):
+    filtered = {}
+    for k, v in dic.items():
+        if k in keep:
+            filtered[k] = v
+        else:
+            _continue = (depth and depth != 0) or depth is None
+            _continue = _continue and isinstance(v, dict)
+            if _continue:
+                _depth = depth if depth is None else depth-1
+                _filtered = filterDict(v, keep, _depth)
+                if _filtered:
+                    filtered[k] = _filtered
+    return filtered
+            
 # result is returned as a list of tuples (key, val)
 def sortDict(dic, by_key=False, indices=[], descending=True, merge=False):
     # sorted by dictionary values
@@ -57,8 +72,7 @@ class getter:
         else:
             sequen = sequen[_indices[0]]
             return self.__call__(sequen, _indices[1:])
-
-
+        
 '''
 Reverse
 

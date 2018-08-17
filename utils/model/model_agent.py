@@ -14,11 +14,12 @@ root_path = os.path.join(curr_path, "../..")
 if root_path not in sys.path:
     sys.path.append(root_path)
 
+from src.config import *
+    
 from utils.model.convnet import ConvNet
 from utils.model.deconvnet import DeConvNet
 from utils.helper.file_manager import loadObject, saveObject
 from utils.dissection.upsample import compose_fieldmap, upsampleL
-from src.config import *
 
 
 '''
@@ -134,7 +135,7 @@ class ModelAgent:
                 activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
 
         return activ_maps
-
+    
 
 '''
 Fieldmaps Helpers

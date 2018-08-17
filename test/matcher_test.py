@@ -190,8 +190,8 @@ class TestIdent(TestBase):
             }
         }
         organised = organiseMatches(matches)
-        self.assertEqual(organised['leg']['conv5_2'][0], (0, (1, 2)))
-        self.assertEqual(organised['leg']['conv5_1'][1], (2, (0, 2)))
+        self.assertEqual(organised['leg']['conv5_2'][0], (0, 1, 2))
+        self.assertEqual(organised['leg']['conv5_1'][1], (2, 0, 2))
 
     def test_identification(self):
         self.log()
@@ -201,8 +201,13 @@ class TestIdent(TestBase):
         # organised_1 = identification(mode='concept')
         # self.assertEqual(organised_0, organised_1)
 
-        organised_2 = identification(top=10, mode='concept', organise=True)
+        organised_2 = loadIdent(top=10, mode='concept', organise=True)
         print (organised_2[10]['conv5_3'])
+
+    def test_concepts_of_unit(self):
+        self.log()
+        concepts = conceptsOfUnit("conv5_1_100", top=-10)
+        self.assertLength(concepts, 10)
         
 if __name__ == "__main__":
     unittest.main()

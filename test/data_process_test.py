@@ -130,13 +130,23 @@ class TestDstructHelper(TestBase):
         self.assertLength(split, 3)
         amount = sum([len(x) for x in split])
         self.assertEqual(amount, 4)
+
+    def test_filter_dict(self):
+        self.log()
+        dic = {
+            1 : {2 : 3, 5 : 5},
+            2 : {3 : 4},
+            5 : 2
+        }
+        dic = filterDict(dic, [2])
+        self.assertEqual(dic, {1:{2:3}, 2:{3:4}})
         
     def test_reverse_dict(self):
         self.log()
         dic = {
             1 : {
                 'a' : 1,
-                'b' : 1,
+                'b' : 1
             },
             2 : {
                 'a' : 2,
@@ -198,6 +208,7 @@ class TestDstructHelper(TestBase):
         self.assertEqual(results[-1], [2, 3, [{3:5}, {6:5}]])
 
     def test_mean(self):
+        self.log()
         dic = {
             1 : {
                 1.1 : [2, 1],
@@ -212,6 +223,12 @@ class TestDstructHelper(TestBase):
         }
         mean = dictMean(dic, key=0)
         self.assertEqual(mean, 2)
+
+
+'''
+Iterator Test
+
+'''
         
 nest = {
     1 : {
