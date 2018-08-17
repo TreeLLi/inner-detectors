@@ -201,9 +201,11 @@ class TestIdent(TestBase):
         # organised_1 = identification(mode='concept')
         # self.assertEqual(organised_0, organised_1)
 
-        organised_2 = loadIdent(top=10, mode='concept', organise=True)
-        print (organised_2[10]['conv5_3'])
-
+        order = 0
+        organised = loadIdent(top=10, mode='concept', filtering=order)
+        classes = getClasses(order=order)
+        self.assertTrue(all(k in classes for k in organised.keys()))
+        
     def test_concepts_of_unit(self):
         self.log()
         concepts = conceptsOfUnit("conv5_1_100", top=-10)

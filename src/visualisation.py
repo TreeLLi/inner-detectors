@@ -25,7 +25,7 @@ from utils.helper.file_manager import saveObject, loadObject, saveImage
 from utils.helper.plotter import revealMask
 from utils.dissection.helper import quanFilter
 from utils.dissection.activ_processor import reflect
-from utils.dissection.identification import loadIdent, conceptsOfUnit
+from utils.dissection.identification import loadIdent, conceptsOfUnit, crossLabelsOfUnit
 from utils.model.model_agent import ModelAgent, unitOfLayer
 
 
@@ -77,44 +77,57 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
             img_id = info['id']
             ccp_type, unit_type = getSampleType(img_id, info, ccp, unit_id)
 
+            # same image, different units
             ccp_samples = SAMPLES[ccp][ccp_type]
             if img_id in ccp_samples:
                 save_ccp_sample = True
-            elif len(ccp_samples) < NUM:
+            elif len(ccp_samples) < NUM and randint(0, 1) == 0:
                 save_ccp_sample = True
                 ccp_samples.add(img_id)
             else:
                 save_ccp_sample = False
             if save_ccp_sample:
-                # same image, different units
                 img_unit_dir = os.path.join(PATH.OUT.VIS.ROOT, "{}/images/{}_{}/"
                                             .format(cls, img_id, ccp_type))
+                if ccp_type != unit_type:
+                    cross = crossLabelsOfUnit(unit_id, info['classes'])
+                    cross_labels = ""
+                    for label in cross:
+                        cross_labels += getClassName(label) + '-'
+                    cross_labels = cross_labels[:-1]
+
+                img_unit_path = img_unit_dir
+                img_unit_path += "{}_{}_{}_{:.2f}_{}".format(rank, layer, unit, iou, unit_type)
+                if ccp_type != unit_type:
+                    img_unit_path += "_{}.png".format(cross_labels)
+                else:
+                    img_unit_path += ".png"
                 if activ_maps:
                     amap = activ_map[idx]
                     vis = revealMask(img, amap, alpha=0.95)
-                    img_unit_path = img_unit_dir
-                    img_unit_path += "{}_{}_{}_{:.2f}_{}.png".format(rank, layer, unit, iou, unit_type)
                     saveImage(vis, img_unit_path)
                 if deconvs:
                     _deconv = deconv[idx]
-                    img_unit_path = img_unit_dir
-                    img_unit_path += "d_{}_{}_{}_{:.2f}_{}.png".format(rank, layer, unit, iou, unit_type)
+                    img_unit_path = "d_" + img_unit_path
                     saveImage(_deconv, img_unit_path)
                 # raw image
                 img_unit_raw_path = img_unit_dir + "{}.png".format(ccp_type)
                 if not os.path.exists(img_unit_raw_path):
                     saveImage(img, img_unit_raw_path)
 
+            # same unit, different images
             unit_samples = SAMPLES[unit_id][unit_type]
-            if img_id in unit_samples:
-                save_unit_sample = True
-            elif len(unit_samples) < NUM:
-                save_unit_sample = True
-                unit_samples.add(img_id)
+            if ccp_type == unit_type:
+                if img_id in unit_samples:
+                    save_unit_sample = True
+                elif len(unit_samples) < NUM and randint(3, 4) == 4:
+                    save_unit_sample = True
+                    unit_samples.add(img_id)
+                else:
+                    save_unit_sample = False
             else:
                 save_unit_sample = False
             if save_unit_sample:
-                # same unit, different images
                 unit_img_dir = os.path.join(PATH.OUT.VIS.ROOT, "{}/units/{}/{}_{}_{:.2f}/"
                                             .format(cls, layer, rank, unit, iou))
                 if activ_maps:

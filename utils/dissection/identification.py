@@ -36,6 +36,14 @@ def conceptsOfUnit(unit_id, top=None, keep_info=False):
     
     return concepts
 
+def crossLabelsOfUnit(unit_id, labels):
+    ccps = conceptsOfUnit(unit_id)
+    cross = []
+    for label in labels:
+        if label in ccps:
+            cross.append(label)
+    return cross
+
 def loadIdent(matches=None,
               mode='unit',
               organise=False,
@@ -65,9 +73,9 @@ def loadIdent(matches=None,
         print ("Matches: convert from concepts to units.")
         matches = reverseDict(matches)
 
-    if filtering:
+    if filtering is not None:
         if isinstance(filtering, int):
-            filtering = getClasses(order=filtering)            
+            filtering = getClasses(order=filtering)
         matches = filterDict(matches, filtering)
             
     # sorting

@@ -11,7 +11,7 @@ from utils.helper.anno_parser import parsePASCALPartAnno
 from utils.helper.file_manager import *
 from utils.helper.data_loader import *
 from utils.helper.data_mapper import *
-from utils.coco.pycocotools.coco import COCO
+from utils.cocoapi.PythonAPI.pycocotools.coco import COCO
 
 
 '''
