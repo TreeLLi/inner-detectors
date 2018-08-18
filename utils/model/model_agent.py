@@ -46,7 +46,14 @@ class ModelAgent:
 
     def getLayers(self):
         return self.model.layers
-            
+
+    def getSessConfig(self):
+        if hasattr(self, 'sess_config'):
+            return self.sess_config
+        
+        self.sess_config = tf.ConfigProto(log_device_placement=False)
+        return self.sess_config
+    
     def getFieldmaps(self, file_path=None):
         if self.field_maps is not None:
             return self.field_maps
@@ -87,7 +94,8 @@ class ModelAgent:
             raise Exception("Error: no outputs are specified for getActivMaps.")
         
         feed_dict = model.createFeedDict(imgs)
-        with tf.Session() as sess:
+        config = self.getSessConfig()
+        with tf.Session(config=config) as sess:
             results = sess.run(fetches, feed_dict=feed_dict)
 
         if 'activs' in results:
@@ -122,16 +130,17 @@ class ModelAgent:
                      for layer, switch in switches.items()}
 
         demodel = self.demodel
-        for unit_id, activ_map in activ_maps.items():
-            layer, unit = splitUnitID(unit_id)
+        config = self.getSessConfig()
+        with tf.Session(config=config) as sess:
+            for unit_id, activ_map in activ_maps.items():
+                layer, unit = splitUnitID(unit_id)
+                
+                input_tensor = demodel.getInputTensor(layer)
+                kernel_num = input_tensor.shape[-1]
+                activ_map = makeUpFullActivMaps(unit, activ_map, kernel_num)
+                feed_dict = demodel.createFeedDict(activ_map, layer, switch_feed)
 
-            input_tensor = demodel.getInputTensor(layer)
-            kernel_num = input_tensor.shape[-1]
-            activ_map = makeUpFullActivMaps(unit, activ_map, kernel_num)
-            feed_dict = demodel.createFeedDict(activ_map, layer, switch_feed)
-
-            output_tensor = demodel.output_tensor
-            with tf.Session() as sess:
+                output_tensor = demodel.output_tensor
                 activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
 
         return activ_maps

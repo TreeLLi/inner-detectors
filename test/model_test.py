@@ -119,7 +119,7 @@ class TestModelAgent(TestBase):
         
         probe_layer = ["pool5"]
         activ_maps, switches = agent.getActivMaps(imgs, probe_layer)
-        activ_maps = {"pool5_1" : activ_maps["pool5_1"]}
+        activ_maps = {"pool5_1" : activ_maps["pool5_1"], "pool5_2" : activ_maps["pool5_2"]}
         ref_activ_maps = agent.getDeconvMaps(activ_maps, switches)
         self.assertShape(ref_activ_maps["pool5_1"], (num, ) + CONFIG.MODEL.INPUT_DIM)
         
