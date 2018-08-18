@@ -36,8 +36,8 @@ def conceptsOfUnit(unit_id, top=None, keep_info=False):
     
     return concepts
 
-def crossLabelsOfUnit(unit_id, labels):
-    ccps = conceptsOfUnit(unit_id)
+def crossLabelsOfUnit(unit_id, labels, top=10):
+    ccps = conceptsOfUnit(unit_id, top)
     cross = []
     for label in labels:
         if label in ccps:

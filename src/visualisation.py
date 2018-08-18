@@ -96,8 +96,7 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                         cross_labels += getClassName(label) + '-'
                     cross_labels = cross_labels[:-1]
 
-                img_unit_path = img_unit_dir
-                img_unit_path += "{}_{}_{}_{:.2f}_{}".format(rank, layer, unit, iou, unit_type)
+                img_unit_path = "{}_{}_{}_{:.2f}_{}".format(rank, layer, unit, iou, unit_type)
                 if ccp_type != unit_type:
                     img_unit_path += "_{}.png".format(cross_labels)
                 else:
@@ -105,16 +104,18 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                 if activ_maps:
                     amap = activ_map[idx]
                     vis = revealMask(img, amap, alpha=0.95)
+                    img_unit_path = img_unit_dir + img_unit_dir
                     saveImage(vis, img_unit_path)
                 if deconvs:
                     _deconv = deconv[idx]
                     img_unit_path = "d_" + img_unit_path
+                    img_unit_path = img_unit_dir + img_unit_path
                     saveImage(_deconv, img_unit_path)
                 # raw image
                 img_unit_raw_path = img_unit_dir + "{}.png".format(ccp_type)
                 if not os.path.exists(img_unit_raw_path):
                     saveImage(img, img_unit_raw_path)
-
+            
             # same unit, different images
             unit_samples = SAMPLES[unit_id][unit_type]
             if ccp_type == unit_type:
@@ -189,7 +190,7 @@ Main Program
 
 if __name__ == "__main__":
     batch_size = 5
-    bl = BatchLoader(amount=5, batch_size=batch_size, mode='classes')
+    bl = BatchLoader(batch_size=batch_size, mode='classes')
     model = ModelAgent(input_size=batch_size, deconv=True)
     field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)
@@ -218,10 +219,10 @@ if __name__ == "__main__":
         reflect_amaps = mergeDict(reflect_amaps)
 
         # DeConvNet
-        # deconv_amaps = model.getDeconvMaps(activ_maps, switches)
+        deconv_amaps = model.getDeconvMaps(activ_maps, switches)
         
         print ("Visualisation: beginning...")
-        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps) # , deconvs=deconv_amaps)
+        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
 
         if finished():
             print ("Finish")
