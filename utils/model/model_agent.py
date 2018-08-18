@@ -19,6 +19,7 @@ from src.config import *
 from utils.model.convnet import ConvNet
 from utils.model.deconvnet import DeConvNet
 from utils.helper.file_manager import loadObject, saveObject
+from utils.helper.dstruct_helper import splitNumber
 from utils.dissection.upsample import compose_fieldmap, upsampleL
 
 
@@ -132,6 +133,8 @@ class ModelAgent:
         demodel = self.demodel
         config = self.getSessConfig()
         with tf.Session(config=config) as sess:
+            quantiles = splitNumber(len(activ_maps), amount=4)
+            counter = 0
             for unit_id, activ_map in activ_maps.items():
                 layer, unit = splitUnitID(unit_id)
                 
@@ -143,6 +146,13 @@ class ModelAgent:
                 output_tensor = demodel.output_tensor
                 activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
 
+                counter += 1
+                if not quantiles and counter == quantiles[0]:
+                    quantiles = quantiles[1:]
+                    per = 25 * (4-len(quantiles))
+                    counter = 0
+                    print ("DeConvolution: processing {}%".format(per))
+                    
         return activ_maps
     
 
