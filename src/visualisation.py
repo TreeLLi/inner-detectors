@@ -104,7 +104,7 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                 if activ_maps:
                     amap = activ_map[idx]
                     vis = revealMask(img, amap, alpha=0.95)
-                    img_unit_path = img_unit_dir + img_unit_dir
+                    img_unit_path = img_unit_dir + img_unit_path
                     saveImage(vis, img_unit_path)
                 if deconvs:
                     _deconv = deconv[idx]
