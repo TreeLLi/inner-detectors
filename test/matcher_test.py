@@ -196,7 +196,7 @@ class TestIdent(TestBase):
     def test_identification(self):
         self.log()
 
-        ident = loadIdent(sorting=True)
+        ident = loadIdent(sorting=True, top=10)
         # matches = loadObject(PATH.OUT.IDE.DATA.UNIT)
         # organised_0 = loadIdent(matches, mode='concept')
         # organised_1 = loadIdent(mode='concept')
@@ -206,6 +206,9 @@ class TestIdent(TestBase):
         organised = loadIdent(top=10, mode='concept', filtering=order)
         classes = getClasses(order=order)
         self.assertTrue(all(k in classes for k in organised.keys()))
+
+        organised = loadIdent(mode='concept', organise=True)
+        self.assertLength(organised[10]['conv5_3'], 512)
         
     def test_concepts_of_unit(self):
         self.log()

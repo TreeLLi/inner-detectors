@@ -20,6 +20,18 @@ from utils.helper.file_manager import loadObject
 
 
 '''
+Auxiliary for Identification
+
+'''
+
+def isUnitForm(matches):
+    return any(isUnitID(uid) for uid in matches.keys())
+
+def isConceptForm(matches):
+    return not isUnitForm(matches)
+
+
+'''
 Identification results
 
 '''
@@ -61,27 +73,29 @@ def loadIdent(matches=None,
     # sorting
     if organise:
         if mode == 'concept':
-            matches = organiseMatches(matches, top)
+            matches = organiseMatches(matches, sorting, top)
         else:
             raise Exception("Error: conflict paramters for 'organise' and 'mode'.")
-    elif sorting:
+    elif sorting or top:
         pool = Pool()
         for k, v in matches.items():
             params = (v, False, [0], True, True)
             matches[k] = pool.apply_async(sortDict, args=params)
         pool.close()
         pool.join()
-        #matches = {k : sortDict(v, indices=[0], merge=True) for k, v in matches.items()}
-        if top and top >= 0:
-            matches = {k : v[:top] for k, v in matches.items()}
-        elif top and top < 0:
-            matches = {k : v[top:] for k, v in matches.items()}
-
+        for k, v in matches.items():
+            if top and top >= 0:
+                matches[k] = v.get()[:top]
+            elif top and top < 0:
+                matches[k] = v.get()[top:]
+            else:
+                matches[k] = v.get()
+    
     end = time.time()
     print ("Identification: finished {}s.".format(int(end-start)))
     return matches
 
-def organiseMatches(matches, top=None):
+def organiseMatches(matches, sorting=False, top=None):
     organised = {}
     for ccp, unit_id, m in nested(matches, depth=2):
         if ccp not in organised:
@@ -92,31 +106,20 @@ def organiseMatches(matches, top=None):
             organised[ccp][layer] = {}
         organised[ccp][layer][unit] = m
 
-    with Pool() as pool:
+    if sorting or top:
+        pool = Pool()
         for ccp, layer, units in nested(organised, depth=2):
             params = (units, False, [0], True, True)
-            if top and top>=0:
-                organised[ccp][layer] = pool.apply_async(sortDict, args=params)[:top]
-            elif top and top<0:
-                organised[ccp][layer] = pool.apply_async(sortDict, args=params)[top:]
-            else:
-                organised[ccp][layer] = pool.apply_async(sortDict, args=params)
+            organised[ccp][layer] = pool.apply_async(sortDict, args=params)
+        pool.close()
         pool.join()
+        if top:
+            for ccp, layer, units in nested(organised, depth=2):
+                units = units.get()
+                organised[ccp][layer] = units[:top] if top >= 0 else units[top:]
     return organised
 
-
-'''
-Auxiliary for Identification
-
-'''
-
-def isUnitForm(matches):
-    return any(isUnitID(uid) for uid in matches.keys())
-
-def isConceptForm(matches):
-    return not isUnitForm(matches)
-
-
+    
 '''
 Unit Idents
 
