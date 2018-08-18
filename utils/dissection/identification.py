@@ -2,6 +2,8 @@ import os, sys
 import numpy as np
 import time
 
+from multiprocessing import Pool
+
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
@@ -21,28 +23,6 @@ from utils.helper.file_manager import loadObject
 Identification results
 
 '''
-
-IDENT = None
-def conceptsOfUnit(unit_id, top=None, keep_info=False):
-    global IDENT
-    if not IDENT:
-        IDENT = loadIdent(sorting=True, filtering=0)
-    concepts = IDENT[unit_id]
-    if top:
-        concepts = concepts[:top] if top > 0 else concepts[top:]
-    if not keep_info:
-        # remove iou and count info
-        concepts = [ccp[0] for ccp in concepts]
-    
-    return concepts
-
-def crossLabelsOfUnit(unit_id, labels, top=10):
-    ccps = conceptsOfUnit(unit_id, top)
-    cross = []
-    for label in labels:
-        if label in ccps:
-            cross.append(label)
-    return cross
 
 def loadIdent(matches=None,
               mode='unit',
@@ -85,7 +65,13 @@ def loadIdent(matches=None,
         else:
             raise Exception("Error: conflict paramters for 'organise' and 'mode'.")
     elif sorting:
-        matches = {k : sortDict(v, indices=[0], merge=True) for k, v in matches.items()}
+        pool = Pool()
+        for k, v in matches.items():
+            params = (v, False, [0], True, True)
+            matches[k] = pool.apply_async(sortDict, args=params)
+        pool.close()
+        pool.join()
+        #matches = {k : sortDict(v, indices=[0], merge=True) for k, v in matches.items()}
         if top and top >= 0:
             matches = {k : v[:top] for k, v in matches.items()}
         elif top and top < 0:
@@ -94,12 +80,6 @@ def loadIdent(matches=None,
     end = time.time()
     print ("Identification: finished {}s.".format(int(end-start)))
     return matches
-
-def isUnitForm(matches):
-    return any(isUnitID(uid) for uid in matches.keys())
-
-def isConceptForm(matches):
-    return not isUnitForm(matches)
 
 def organiseMatches(matches, top=None):
     organised = {}
@@ -112,13 +92,57 @@ def organiseMatches(matches, top=None):
             organised[ccp][layer] = {}
         organised[ccp][layer][unit] = m
 
-    for ccp, layer, units in nested(organised, depth=2):
-        if top:
-            organised[ccp][layer] = sortDict(units, indices=[0], merge=True)[:top]
-        else:
-            organised[ccp][layer] = sortDict(units, indices=[0], merge=True)
-
+    with Pool() as pool:
+        for ccp, layer, units in nested(organised, depth=2):
+            params = (units, False, [0], True, True)
+            if top and top>=0:
+                organised[ccp][layer] = pool.apply_async(sortDict, args=params)[:top]
+            elif top and top<0:
+                organised[ccp][layer] = pool.apply_async(sortDict, args=params)[top:]
+            else:
+                organised[ccp][layer] = pool.apply_async(sortDict, args=params)
+        pool.join()
     return organised
+
+
+'''
+Auxiliary for Identification
+
+'''
+
+def isUnitForm(matches):
+    return any(isUnitID(uid) for uid in matches.keys())
+
+def isConceptForm(matches):
+    return not isUnitForm(matches)
+
+
+'''
+Unit Idents
+
+'''
+
+IDENT = None
+def conceptsOfUnit(unit_id, top=None, keep_info=False):
+    global IDENT
+    if not IDENT:
+        IDENT = loadIdent(sorting=True, filtering=0)
+    concepts = IDENT[unit_id]
+    if top:
+        concepts = concepts[:top] if top > 0 else concepts[top:]
+    if not keep_info:
+        # remove iou and count info
+        concepts = [ccp[0] for ccp in concepts]
+    
+    return concepts
+
+def crossLabelsOfUnit(unit_id, labels, top=10):
+    ccps = conceptsOfUnit(unit_id, top)
+    cross = []
+    for label in labels:
+        if label in ccps:
+            cross.append(label)
+    return cross
 
 
 '''

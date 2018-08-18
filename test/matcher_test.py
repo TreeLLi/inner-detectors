@@ -195,10 +195,11 @@ class TestIdent(TestBase):
 
     def test_identification(self):
         self.log()
-        
+
+        ident = loadIdent(sorting=True)
         # matches = loadObject(PATH.OUT.IDE.DATA.UNIT)
-        # organised_0 = identification(matches, mode='concept')
-        # organised_1 = identification(mode='concept')
+        # organised_0 = loadIdent(matches, mode='concept')
+        # organised_1 = loadIdent(mode='concept')
         # self.assertEqual(organised_0, organised_1)
 
         order = 0
