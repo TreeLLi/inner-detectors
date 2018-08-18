@@ -109,7 +109,7 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                 if deconvs:
                     _deconv = deconv[idx]
                     path = img_unit_dir + "d_" + img_unit_path
-                    saveImage(_deconv, img_unit_path)
+                    saveImage(_deconv, path)
                 # raw image
                 img_unit_raw_path = img_unit_dir + "{}.png".format(ccp_type)
                 if not os.path.exists(img_unit_raw_path):
@@ -188,13 +188,14 @@ Main Program
 '''
 
 if __name__ == "__main__":
-    batch_size = 5
+    batch_size = 1
     bl = BatchLoader(batch_size=batch_size, mode='classes')
     model = ModelAgent(input_size=batch_size, deconv=True)
     field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
     ident = loadIdent(top=10, mode='concept', organise=True, filtering=0)
+    ident = {1 : ident[1]}
     probe_units = poolUnits(ident)
     
     pool = Pool()

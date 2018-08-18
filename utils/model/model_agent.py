@@ -147,7 +147,7 @@ class ModelAgent:
                 activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
 
                 counter += 1
-                if not quantiles and counter == quantiles[0]:
+                if quantiles and counter == quantiles[0]:
                     quantiles = quantiles[1:]
                     per = 25 * (4-len(quantiles))
                     counter = 0
