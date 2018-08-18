@@ -104,12 +104,11 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                 if activ_maps:
                     amap = activ_map[idx]
                     vis = revealMask(img, amap, alpha=0.95)
-                    img_unit_path = img_unit_dir + img_unit_path
-                    saveImage(vis, img_unit_path)
+                    path = img_unit_dir + img_unit_path
+                    saveImage(vis, path)
                 if deconvs:
                     _deconv = deconv[idx]
-                    img_unit_path = "d_" + img_unit_path
-                    img_unit_path = img_unit_dir + img_unit_path
+                    path = img_unit_dir + "d_" + img_unit_path
                     saveImage(_deconv, img_unit_path)
                 # raw image
                 img_unit_raw_path = img_unit_dir + "{}.png".format(ccp_type)
