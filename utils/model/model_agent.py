@@ -56,8 +56,7 @@ class ModelAgent:
         else:
             configs = {
                 'deconv' : tf.ConfigProto(log_device_placement=False),
-                'forward' : tf.ConfigProto(log_device_placement=False,
-                                          device_count={'GPU':0})
+                'forward' : tf.ConfigProto(log_device_placement=False)
             }
             self.sess_configs = configs
         
