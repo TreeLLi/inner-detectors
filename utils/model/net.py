@@ -23,7 +23,10 @@ class Net:
             self.params = None
 
         self.tensors = {}
-        
+
+    @property
+    def graph(self):
+        return tf.get_default_graph()
     
     def getConfig(self, layers):
         if isinstance(layers, list):
@@ -31,6 +34,12 @@ class Net:
         elif isinstance(layers, str):
             return self.configs[layers]
 
+    def getDevice(self, use_cpu):
+        if use_cpu:
+            return '/cpu:0'
+        else:
+            return None
+        
     def getTensor(self, layers):
         if isinstance(layers, list):
             return [self.tensors[x] for x in layers]

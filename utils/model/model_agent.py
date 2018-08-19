@@ -32,18 +32,20 @@ class ModelAgent:
 
     def __init__(self,
                  input_size=10,
-                 deconv=False):
+                 deconv=False,
+                 forward_cpu=False,
+                 deconv_cpu=False):
         self.field_maps = None
         self.input_size = input_size
         self.deconv = deconv
         
         # initialise base model according to the given str
         self.model = ConvNet(PATH.MODEL.CONFIG, PATH.MODEL.PARAM, deconv=deconv)
-        self.model.build(input_size)
+        self.model.build(input_size, forward_cpu)
         
         if self.deconv:
             self.demodel = DeConvNet(self.model)
-            self.demodel.build(input_size)
+            self.demodel.build(input_size, deconv_cpu)
 
     def getLayers(self):
         return self.model.layers
@@ -77,7 +79,7 @@ class ModelAgent:
             print ("Fieldmaps: saved at {}".format(file_path))
         self.field_maps = field_maps
         return self.field_maps
-            
+    
     def getActivMaps(self, imgs, layers=None, prob=False):
         model = self.model
         imgs = np.asarray(imgs) if not isinstance(imgs, np.ndarray) else imgs
@@ -102,8 +104,9 @@ class ModelAgent:
         
         feed_dict = model.createFeedDict(imgs)
         config = self.getSessConfig('forward')
-        with tf.Session(config=config) as sess:
-            results = sess.run(fetches, feed_dict=feed_dict)
+        with model.graph.as_default():
+            with tf.Session(config=config) as sess:
+                results = sess.run(fetches, feed_dict=feed_dict)
 
         if 'activs' in results:
             activ_maps = {}
@@ -138,26 +141,28 @@ class ModelAgent:
 
         demodel = self.demodel
         config = self.getSessConfig('deconv')
-        with tf.Session(config=config) as sess:
-            quantiles = splitNumber(len(activ_maps), amount=4)
-            counter = 0
-            for unit_id, activ_map in activ_maps.items():
-                layer, unit = splitUnitID(unit_id)
-                
-                input_tensor = demodel.getInputTensor(layer)
-                kernel_num = input_tensor.shape[-1]
-                activ_map = makeUpFullActivMaps(unit, activ_map, kernel_num)
-                feed_dict = demodel.createFeedDict(activ_map, layer, switch_feed)
+        with demodel.graph.as_default():
+            with tf.Session(config=config) as sess:
+                quantiles = splitNumber(len(activ_maps), amount=4)
+                counter = 0
+                for unit_id, activ_map in activ_maps.items():
+                    layer, unit = splitUnitID(unit_id)
+                    
+                    input_tensor = demodel.getInputTensor(layer)
+                    kernel_num = input_tensor.shape[-1]
+                    activ_map = makeUpFullActivMaps(unit, activ_map, kernel_num)
+                    feed_dict = demodel.createFeedDict(activ_map, layer, switch_feed)
 
-                output_tensor = demodel.output_tensor
-                activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
+                    output_tensor = demodel.output_tensor
+                    activ_maps[unit_id] = sess.run(output_tensor, feed_dict=feed_dict)
 
-                counter += 1
-                if quantiles and counter == quantiles[0]:
-                    quantiles = quantiles[1:]
-                    per = 25 * (4-len(quantiles))
-                    counter = 0
-                    print ("DeConvolution: processing {}%".format(per))
+                    counter += 1
+                    if quantiles and counter == quantiles[0]:
+                        quantiles = quantiles[1:]
+                        per = 25 * (4-len(quantiles))
+                        counter = 0
+                        print ("DeConvolution: processing {}%".format(per))
+                    
                     
         return activ_maps
     
