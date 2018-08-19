@@ -48,12 +48,18 @@ class ModelAgent:
     def getLayers(self):
         return self.model.layers
 
-    def getSessConfig(self):
+    def getSessConfig(self, process):
         if hasattr(self, 'sess_config'):
-            return self.sess_config
+            configs = self.sess_configs
+        else:
+            configs = {
+                'deconv' : tf.ConfigProto(log_device_placement=False),
+                'forward' : tf.ConfigProto(log_device_placement=False,
+                                          device_count={'GPU':0})
+            }
+            self.sess_configs = configs
         
-        self.sess_config = tf.ConfigProto(log_device_placement=False)
-        return self.sess_config
+        return configs[process]
     
     def getFieldmaps(self, file_path=None):
         if self.field_maps is not None:
@@ -95,7 +101,7 @@ class ModelAgent:
             raise Exception("Error: no outputs are specified for getActivMaps.")
         
         feed_dict = model.createFeedDict(imgs)
-        config = self.getSessConfig()
+        config = self.getSessConfig('forward')
         with tf.Session(config=config) as sess:
             results = sess.run(fetches, feed_dict=feed_dict)
 
@@ -131,7 +137,7 @@ class ModelAgent:
                      for layer, switch in switches.items()}
 
         demodel = self.demodel
-        config = self.getSessConfig()
+        config = self.getSessConfig('deconv')
         with tf.Session(config=config) as sess:
             quantiles = splitNumber(len(activ_maps), amount=4)
             counter = 0
