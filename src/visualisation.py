@@ -7,7 +7,7 @@ To visualise the feature maps of individual units
 
 
 import os, sys
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from random import randint
 from itertools import product
 
@@ -199,8 +199,7 @@ if __name__ == "__main__":
     ident = loadIdent(top=10, mode='concept', organise=True, filtering=0)
     probe_units = poolUnits(ident)
     
-    pool = Pool()
-    num = pool._processes
+    num = cpu_count()
     while bl:
         batch = bl.nextBatch()
         img_ids = batch[0]
@@ -215,7 +214,8 @@ if __name__ == "__main__":
         reflect_amaps = splitDict(activ_maps, num)
         params = [(amap, field_maps) for amap in reflect_amaps]
         print ("Activation Maps: being projected...")
-        reflect_amaps = pool.starmap(process, params)
+        with Pool() as pool:
+            reflect_amaps = pool.starmap(process, params)
         print ("Finish reflection")
         reflect_amaps = mergeDict(reflect_amaps)
         
@@ -224,8 +224,8 @@ if __name__ == "__main__":
         activ_maps = None
         
         print ("Visualisation: beginning...")
-        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps)
-        #visualise(ident, imgs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
+        # visualise(ident, imgs, img_infos, activ_maps=reflect_amaps)
+        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
         reflect_amaps = None
         deconv_amaps = None
         
