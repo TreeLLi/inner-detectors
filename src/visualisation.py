@@ -87,6 +87,8 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
             else:
                 save_ccp_sample = False
             if save_ccp_sample:
+                if ccp==74 and layer=='conv5_1' and unit==317 and img_id==139:
+                    print ("save con5_1_317 for image 139")
                 img_unit_dir = os.path.join(PATH.OUT.VIS.ROOT, "{}/images/{}_{}/"
                                             .format(cls, img_id, ccp_type))
                 if ccp_type != unit_type:
@@ -188,14 +190,13 @@ Main Program
 '''
 
 if __name__ == "__main__":
-    batch_size = 1
+    batch_size = 5
     bl = BatchLoader(batch_size=batch_size, mode='classes')
     model = ModelAgent(input_size=batch_size, deconv=True)
     field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
     ident = loadIdent(top=10, mode='concept', organise=True, filtering=0)
-    ident = {1 : ident[1]}
     probe_units = poolUnits(ident)
     
     pool = Pool()
@@ -209,7 +210,7 @@ if __name__ == "__main__":
         print ("Activation Maps: fetching...")
         activ_maps, switches = model.getActivMaps(imgs, probe_layers)
         activ_maps = {k : activ_maps[k] for k in probe_units}
-
+        
         # Network Dissection
         reflect_amaps = splitDict(activ_maps, num)
         params = [(amap, field_maps) for amap in reflect_amaps]
@@ -217,13 +218,17 @@ if __name__ == "__main__":
         reflect_amaps = pool.starmap(process, params)
         print ("Finish reflection")
         reflect_amaps = mergeDict(reflect_amaps)
-
+        
         # DeConvNet
         deconv_amaps = model.getDeconvMaps(activ_maps, switches)
+        activ_maps = None
         
         print ("Visualisation: beginning...")
-        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
-
+        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps)
+        #visualise(ident, imgs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
+        reflect_amaps = None
+        deconv_amaps = None
+        
         if finished():
             print ("Finish")
             bl.finish()
