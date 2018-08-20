@@ -12,6 +12,7 @@ import os, sys
 import numpy as np
 import time, datetime
 
+from random import shuffle
 from os.path import exists
 from utils.cocoapi.PythonAPI.pycocotools.coco import COCO
 
@@ -129,13 +130,15 @@ class BatchLoader(object):
         # initlisation for particular sources
         if any(isCOCO(source) for source in sources):
             self.cocos = {}
-
+        
         self.initDatasets(sources, amount)
         # special loading mode
         self.mode = mode
-        if mode == "classes":
+        if mode and 'classes' in mode:
             self.initModeClasses()
-            
+        if mode and 'random' in mode:
+            self.randomData()
+        
         print ("Data Loader: finish initialisation.")
 
     def initModeClasses(self):
@@ -146,6 +149,9 @@ class BatchLoader(object):
         else:
             self.cls_counts = {cls : 1 for cls in classes}
 
+    def randomData(self):
+        shuffle(self.data)
+            
     def initDatasets(self, sources, amount):
         # config data to be loaded
         self.database = loadObject(PATH.DATA.IMG_MAP)
@@ -233,7 +239,7 @@ class BatchLoader(object):
                 img_id = sample[1]
                 img_source = sample[2]
                 img_idx = sample[0]
-                if self.mode == "classes":
+                if self.mode and 'classes' in self.mode:
                     # mode 'classes': check if adding this sample
                     # will destroy balance of classes distribution
                     classes = getImageClasses(img_idx)
@@ -265,7 +271,7 @@ class BatchLoader(object):
                     if DESCRIBE_DATA:
                         describeData(annos, des)
                         
-                    if self.mode == "classes":
+                    if self.mode and 'classes' in self.mode:
                         for cls in classes:
                             self.cls_counts[cls] -= 1
                         if all(c <= 0 for c in self.cls_counts.values()):

@@ -113,9 +113,10 @@ def organiseMatches(matches, sorting=False, top=None):
             organised[ccp][layer] = pool.apply_async(sortDict, args=params)
         pool.close()
         pool.join()
-        if top:
-            for ccp, layer, units in nested(organised, depth=2):
-                units = units.get()
+        for ccp, layer, units in nested(organised, depth=2):
+            units = units.get()
+            organised[ccp][layer] = units
+            if top:
                 organised[ccp][layer] = units[:top] if top >= 0 else units[top:]
     return organised
 

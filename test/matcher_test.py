@@ -189,7 +189,7 @@ class TestIdent(TestBase):
                 "conv4_2_0" : (1, 2)
             }
         }
-        organised = organiseMatches(matches)
+        organised = organiseMatches(matches, sorting=True)
         self.assertEqual(organised['leg']['conv5_2'][0], (0, 1, 2))
         self.assertEqual(organised['leg']['conv5_1'][1], (2, 0, 2))
 

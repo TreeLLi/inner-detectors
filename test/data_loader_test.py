@@ -46,6 +46,16 @@ class TestDataLoader(TestBase):
         batch = bl.nextBatch()
         self.assertLength(batch[1], 10)
         self.assertIsNone(bl.backup)
+
+        amount = 100
+        bl = BatchLoader(amount=amount, mode=['classes', 'random'])
+        self.assertEqual(bl.size, amount)
+        batch = bl.nextBatch()
+        img_ids = batch[0]
+        img_cls_maps = loadObject(PATH.DATA.IMG_CLS_MAP)
+        ordered = img_cls_maps[:10]
+        ordered = [x[0] for x in ordered]
+        self.assertNotEqual(img_ids, ordered)
         
     def test_fetch_data_from_pascal(self):
         self.log()

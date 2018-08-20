@@ -8,7 +8,6 @@ To visualise the feature maps of individual units
 
 import os, sys
 from multiprocessing import Pool, cpu_count
-from random import randint
 from itertools import product
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
@@ -60,7 +59,8 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
         iou = m[1]
         unit_id = unitOfLayer(layer, unit)
         cls = getClassName(ccp, full=True)
-
+        ccp_unit_id = "{}_{}".format(ccp, unit_id)
+        
         if activ_maps:
             activ_map = activ_maps[unit_id]
         if deconvs:
@@ -70,7 +70,7 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
         if ccp not in SAMPLES:
             SAMPLES[ccp] = {k : set() for k in SAMPLE_TYPES}
         if unit_id not in SAMPLES:
-            SAMPLES[unit_id] = {k : set() for k in SAMPLE_TYPES}
+            SAMPLES[ccp_unit_id] = {k : set() for k in SAMPLE_TYPES}
             
         for idx, img in enumerate(imgs):
             info = img_infos[idx]
@@ -81,25 +81,22 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
             ccp_samples = SAMPLES[ccp][ccp_type]
             if img_id in ccp_samples:
                 save_ccp_sample = True
-            elif len(ccp_samples) < NUM and randint(0, 1) == 0:
+            elif len(ccp_samples) < NUM:
                 save_ccp_sample = True
                 ccp_samples.add(img_id)
             else:
                 save_ccp_sample = False
             if save_ccp_sample:
-                if ccp==74 and layer=='conv5_1' and unit==317 and img_id==139:
-                    print ("save con5_1_317 for image 139")
                 img_unit_dir = os.path.join(PATH.OUT.VIS.ROOT, "{}/images/{}_{}/"
                                             .format(cls, img_id, ccp_type))
-                if ccp_type != unit_type:
+                img_unit_path = "{}_{}_{}_{:.2f}_{}".format(rank, layer, unit, iou, unit_type)
+                
+                if ccp_type != unit_type and unit_type == 'positive':
                     cross = crossLabelsOfUnit(unit_id, info['classes'])
                     cross_labels = ""
                     for label in cross:
                         cross_labels += getClassName(label) + '-'
                     cross_labels = cross_labels[:-1]
-
-                img_unit_path = "{}_{}_{}_{:.2f}_{}".format(rank, layer, unit, iou, unit_type)
-                if ccp_type != unit_type:
                     img_unit_path += "_{}.png".format(cross_labels)
                 else:
                     img_unit_path += ".png"
@@ -118,11 +115,11 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                     saveImage(img, img_unit_raw_path)
             
             # same unit, different images
-            unit_samples = SAMPLES[unit_id][unit_type]
+            unit_samples = SAMPLES[ccp_unit_id][unit_type]
             if ccp_type == unit_type:
                 if img_id in unit_samples:
                     save_unit_sample = True
-                elif len(unit_samples) < NUM and randint(3, 4) == 4:
+                elif len(unit_samples) < NUM:
                     save_unit_sample = True
                     unit_samples.add(img_id)
                 else:
@@ -150,24 +147,14 @@ SAMPLE_TYPES = ['positive', 'negative']
 def getSampleType(img_id, img_info, ccp, unit_id):
     smp_types = [None, None]
     # type of sample for the concept
-    ccp_samples = SAMPLES[ccp]
-    for smp_type, _samples in ccp_samples.items():
-        if img_id in _samples:
-            smp_types[0] = smp_type
     img_labels = img_info['classes']
-    if not smp_types[0]:
-        smp_types[0] = 'positive' if ccp in img_labels else 'negative'
+    smp_types[0] = 'positive' if ccp in img_labels else 'negative'
         
     # type of samples for the unit
-    unit_samples = SAMPLES[unit_id]
-    for smp_type, _samples in unit_samples.items():
-        if img_id in _samples:
-            smp_types[1] = smp_type
-    if not smp_types[1]:
-        unit_ccps = conceptsOfUnit(unit_id, top=10)
-        _type = any(label in unit_ccps for label in img_labels)
-        _type = 'positive' if _type else 'negative'
-        smp_types[1] = _type
+    unit_ccps = conceptsOfUnit(unit_id, top=10)
+    _type = any(label in unit_ccps for label in img_labels)
+    _type = 'positive' if _type else 'negative'
+    smp_types[1] = _type
     return smp_types
     
 def finished():
@@ -190,8 +177,8 @@ Main Program
 '''
 
 if __name__ == "__main__":
-    batch_size = 5
-    bl = BatchLoader(batch_size=batch_size, mode='classes')
+    batch_size = 1
+    bl = BatchLoader(batch_size=batch_size, mode=['classes', 'random'])
     model = ModelAgent(input_size=batch_size, deconv=True)
     field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)
