@@ -69,7 +69,7 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
         # create samples counter
         if ccp not in SAMPLES:
             SAMPLES[ccp] = {k : set() for k in SAMPLE_TYPES}
-        if unit_id not in SAMPLES:
+        if ccp_unit_id not in SAMPLES:
             SAMPLES[ccp_unit_id] = {k : set() for k in SAMPLE_TYPES}
             
         for idx, img in enumerate(imgs):
