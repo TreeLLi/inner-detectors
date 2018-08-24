@@ -11,6 +11,8 @@ import pickle
 import json
 import cv2
 
+from skimage.io import imread, imsave
+
 import matplotlib.pyplot as plt
 
 '''
@@ -50,10 +52,15 @@ def loadImage(directory, file_name, mode="BGR"):
     except Exception as e:
         print (e)
         
-def saveImage(img, file_path):
+def saveImage(img, file_path, plugin='opencv'):
     try:
         makeDirectory(file_path)
-        cv2.imwrite(file_path, img)
+        if plugin == 'opencv':
+            cv2.imwrite(file_path, img)
+        elif plugin == 'skimage':
+            imsave(file_path, img)
+        else:
+            raise Exception("Error: unknown plugin for saving iamges")
     except Exception as e:
         print (e)
 
@@ -70,7 +77,7 @@ Objects I/O
 
 '''
     
-def loadObject(file_path, dstru='list'):
+def loadObject(file_path, dstru='list', split=True):
     try:
         ftype = file_path.split('.')[-1]
         if ftype == 'pkl':
@@ -78,7 +85,7 @@ def loadObject(file_path, dstru='list'):
                 obj = pickle.load(f, )
                 return obj
         elif ftype == 'txt' and dstru == 'list':
-            return loadListFromText(file_path)
+            return loadListFromText(file_path, split)
         elif ftype == 'json':
             with open(file_path, encoding='utf-8') as f:
                 return json.load(f)
@@ -109,18 +116,25 @@ List-Text I/O
 
 '''
         
-def loadListFromText(file_path):
+def loadListFromText(file_path, split):
     try:
         with open(file_path, 'r') as f:
             lines = f.readlines()
             for idx, line in enumerate(lines):
-                line = line.rstrip("\n\t")
-                splited = line.split(',')
-                for _idx, e in enumerate(splited):
-                    if e.isdigit():
-                        splited[_idx] = int(e)
-                splited = splited[0] if len(splited) == 1 else splited
-                lines[idx] = splited
+                line = line.rstrip("\n")
+                if split:
+                    split = [line]
+                    for ch in [',\t', ',', '\t']:
+                        _split = []
+                        for _s in split:
+                            _split += _s.split(ch)
+                        split = _split
+                    for _idx, e in enumerate(split):
+                        if e.isdigit():
+                            split[_idx] = int(e)
+                    split = split[0] if len(split) == 1 else split
+                    line = split
+                lines[idx] = line
             return lines
     except Exception as e:
         print ("Error: failed to load text file {}".format(file_path))

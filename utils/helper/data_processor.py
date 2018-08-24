@@ -34,6 +34,9 @@ def preprocessImage(img):
 
 # preprocess annos for one single image
 def preprocessAnnos(annos, mask_thresh=0.5):
+    if not annos:
+        return None
+    
     processed = {}
     for anno in annos:
         mask = anno[1]

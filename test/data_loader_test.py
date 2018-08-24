@@ -1,5 +1,7 @@
 import unittest, os, sys
 
+from itertools import product
+
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
 if root_path not in sys.path:
@@ -11,6 +13,8 @@ from utils.helper.anno_parser import parsePASCALPartAnno
 from utils.helper.file_manager import *
 from utils.helper.data_loader import *
 from utils.helper.data_mapper import *
+from utils.helper.imagenet_helper import *
+
 from utils.cocoapi.PythonAPI.pycocotools.coco import COCO
 
 
@@ -37,18 +41,18 @@ class TestDataLoader(TestBase):
         batch = bl.nextBatch()
         self.assertShape(batch[1], (10, 224, 224, 3))
 
-        bl = BatchLoader(amount=10, mode="classes")
+        bl = BatchLoader(amount=10, classes=0)
         batch = bl.nextBatch()
         self.assertLength(batch[1], 10)
         # self.assertLength(bl.backup, len(bl.dataset)-12)
         
-        bl = BatchLoader(mode="classes")
+        bl = BatchLoader(classes=0)
         batch = bl.nextBatch()
         self.assertLength(batch[1], 10)
         self.assertIsNone(bl.backup)
 
         amount = 100
-        bl = BatchLoader(amount=amount, mode=['classes', 'random'])
+        bl = BatchLoader(amount=amount, classes=0, random=True)
         self.assertEqual(bl.size, amount)
         batch = bl.nextBatch()
         img_ids = batch[0]
@@ -56,6 +60,14 @@ class TestDataLoader(TestBase):
         ordered = img_cls_maps[:10]
         ordered = [x[0] for x in ordered]
         self.assertNotEqual(img_ids, ordered)
+
+        bl = BatchLoader(sources=[IMAGENET], amount=10)
+        batch = bl.nextBatch()
+        self.assertLength(batch[1], 10)
+
+        bl = BatchLoader(sources=[IMAGENET], amount=10, classes=0)
+        batch = bl.nextBatch()
+        self.assertLength(batch[1], 10)
         
     def test_fetch_data_from_pascal(self):
         self.log()
@@ -169,6 +181,70 @@ class TestAnnoParser(TestBase):
         mappings = [[], []]
         
         annos = parsePASCALPartAnno(directory, file_name, mappings, mapClassID)
+
+
+'''
+Test ImageNet Helper
+
+'''
+
+class TestImageNetHelper(TestBase):
+
+    def test_wnid_of_name(self):
+        self.log()
+        name = "Depression, Great Depression"
+        wnid = "n15294211"
+
+        self.assertEqual(wnidOfName(name), wnid)
+        self.assertEqual(nameOfWnid(wnid), name)
+
+    def test_super_cates(self):
+        self.log()
+        wnid = 'n03273913'
+        real_sup = ['n04070727', 'n04580493', 'n03528263', 'n02729837', 'n03257877', 'n03093574', 'n03076708', 'n00021939']
+        func_sup = superCateIdsOfWnid(wnid)
+        self.assertContain(func_sup, real_sup)
+
+        real_sup_names = ['refrigerator', 'white goods', 'home appliance']
+        func_names = superCateNamesOfWnid(wnid)
+        self.assertContain(func_names, real_sup_names)
+
+    def test_classifier_map(self):
+        self.log()
+        unmap = set(getClasses())
+        mapped = set()
+        for idx in range(0, 1000):
+            cls = classOfIndice(idx)
+            if cls != 0:
+                mapped.add(cls)
+            if cls in unmap:
+                unmap.remove(cls)
+
+        classes = classesOfClassifier()
+        mapped = sorted(mapped)
+        self.assertEqual(mapped, classes)
+
+    def test_image_urls(self):
+        wnid = "n15075141"
+        urls = fetchImageUrlsOfWnid(wnid)
+
+        self.assertEqual(urls[-1], "http://farm3.static.flickr.com/2478/3988827219_68c69c9411.jpg")
+        
+    def test_classes_map(self):
+        self.log()
+        classes = getClasses()
+        classes = [getClassName(cls) for cls in classes]
+        wnid_names = loadWnidNames()
+        unmapped = set(classes)
+        for cls, name in product(classes, wnid_names.values()):
+            name = name.split(', ')
+            name = [convert(_name) for _name in name]
+            if cls in name:
+                if cls in unmapped:
+                    unmapped.remove(cls)
+
+        print (unmapped)
+        
         
 if __name__ == "__main__":
     unittest.main()

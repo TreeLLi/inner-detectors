@@ -178,7 +178,7 @@ Main Program
 
 if __name__ == "__main__":
     batch_size = 1
-    bl = BatchLoader(batch_size=batch_size, mode=['classes', 'random'])
+    bl = BatchLoader(batch_size=batch_size, classes=0, random=True)
     model = ModelAgent(input_size=batch_size, deconv=True)
     field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)

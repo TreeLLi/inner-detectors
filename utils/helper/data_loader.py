@@ -14,7 +14,7 @@ import time, datetime
 
 from random import shuffle
 from os.path import exists
-from utils.cocoapi.PythonAPI.pycocotools.coco import COCO
+from utils.cocoapi.PythonAPI.pycocotools.coco import COCO as Coco
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "../..")
@@ -27,6 +27,7 @@ from utils.helper.data_mapper import *
 from utils.helper.dstruct_helper import splitNumber
 from utils.helper.file_manager import loadImage, loadObject, saveObject
 from utils.helper.anno_parser import parsePASCALPartAnno
+from utils.helper.imagenet_helper import classesOfClassifier
 
 
 '''
@@ -113,7 +114,7 @@ def fetchDataFromCOCO(img_id, subset, coco):
 
     return img, annos
 
-    
+
 '''
 Load data as batches
 
@@ -121,28 +122,30 @@ Load data as batches
 
 class BatchLoader(object):
 
-    def __init__(self, sources=CONFIG.DATA.SOURCES, batch_size=10, amount=None, mode=None):
+    def __init__(self, sources=CONFIG.DIS.DATASETS, batch_size=10, amount=None, random=False, classes=None):
         print ("Data Loader: initialising...")
         self.batch_size = batch_size
         self.batch_id = 0
         self.progress = [0 for x in range(4)]
         
-        # initlisation for particular sources
-        if any(isCOCO(source) for source in sources):
-            self.cocos = {}
-        
         self.initDatasets(sources, amount)
+        
         # special loading mode
-        self.mode = mode
-        if mode and 'classes' in mode:
-            self.initModeClasses()
-        if mode and 'random' in mode:
+        if classes is not None:
+            if IMAGENET in sources:
+                classes = classesOfClassifier()
+            self.initModeClasses(classes)
+        if random:
             self.randomData()
         
         print ("Data Loader: finish initialisation.")
 
-    def initModeClasses(self):
-        classes = getClasses()
+    def initModeClasses(self, keep):
+        if isinstance(keep, list):
+            classes = keep
+        elif isinstance(keep, int):
+            classes = getClasses(order=keep)
+            
         if self.amount >= len(classes):
             split = splitNumber(self.amount, len(classes))
             self.cls_counts = {cls : split[i] for i, cls in enumerate(classes)}
@@ -203,12 +206,15 @@ class BatchLoader(object):
     
     def getCOCO(self, subset):
         # lazy loading to avoid long waiting time for initialisation
+        if not hasattr(self, 'cocos'):
+            self.cocos = {}
+        
         if subset in self.cocos:
             return self.cocos[subset]
         elif subset in ["train", "val"]:
             dir_path = PATH.DATA.COCO.ANNOS
             file_path = dir_path.format(subset)
-            self.cocos[subset] = COCO(file_path)
+            self.cocos[subset] = Coco(file_path)
             return self.cocos[subset]
         else:
             raise Exception("Error: invalid subset key for MS COCO")
@@ -239,10 +245,10 @@ class BatchLoader(object):
                 img_id = sample[1]
                 img_source = sample[2]
                 img_idx = sample[0]
-                if self.mode and 'classes' in self.mode:
+                if hasattr(self, 'cls_counts'):
                     # mode 'classes': check if adding this sample
                     # will destroy balance of classes distribution
-                    classes = getImageClasses(img_idx)
+                    classes = self.getImageInfo(img_idx)['classes']
                     remgs = [self.cls_counts[cls]-1 for cls in classes]
                     if any(c < -1 for c in remgs):
                         # sample causing imbalance classes distribution
@@ -250,28 +256,33 @@ class BatchLoader(object):
                         num += 1
                         continue
                 
-                if isPASCAL(img_source):
+                if img_source == PASCAL:
                     img, annos = fetchDataFromPASCAL(img_id)
-                elif isCOCO(img_source):
+                elif img_source == COCO:
                     subset = sample[3]
                     coco = self.getCOCO(subset)
                     img, annos = fetchDataFromCOCO(img_id, subset, coco)
+                elif img_source == IMAGENET:
+                    file_name = "{}.jpg".format(img_id)
+                    img = loadImage(PATH.DATA.IMAGENET.IMGS, file_name)
+                    annos = None
                     
                 img = preprocessImage(img)
                 annos = preprocessAnnos(annos)
-                if len(annos) == 0:
+                if annos is not None and len(annos) == 0:
                     # skip the sample without any annotation
                     # increase counter 'num' to load images in next loop
                     num += 1
                 else:
                     batch[0].append(img_idx)
                     batch[1].append(img)
-                    batch[2].append(annos)
+                    if annos:
+                        batch[2].append(annos)
 
                     if DESCRIBE_DATA:
                         describeData(annos, des)
                         
-                    if self.mode and 'classes' in self.mode:
+                    if hasattr(self, 'cls_counts'):
                         for cls in classes:
                             self.cls_counts[cls] -= 1
                         if all(c <= 0 for c in self.cls_counts.values()):

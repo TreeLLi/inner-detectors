@@ -7,20 +7,23 @@ To download, organise and generate intermediate description files
 
 
 import sys
-from operator import itemgetter
-from os.path import exists, join, dirname, abspath
 import numpy as np
 import time
+
+from os.path import exists, join, dirname, abspath
+from random import shuffle
+from skimage.io import imread
 
 curr_path = dirname(abspath(__file__))
 root_path = join(curr_path, "..")
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
-from src.config import CONFIG, PATH, isPASCAL, isCOCO
-from utils.helper.file_manager import loadObject, saveObject, getFilesInDirectory
+from src.config import *
+from utils.helper.file_manager import loadObject, saveObject, saveImage, getFilesInDirectory
 from utils.helper.anno_parser import parsePASCALPartAnno
-from utils.helper.data_mapper import mapClassID, getClassID, convert
+from utils.helper.data_mapper import mapClassID, getClassID, getClassName, convert
+from utils.helper.dstruct_helper import nested
 
 
 '''
@@ -31,6 +34,40 @@ Download
 def downloadDatasets(sources):
     print ("download datasets of sources.")
 
+def downloadImageNet():
+    print ("downloading ImageNet dataset.")
+    
+    classes, labels = classesOfClassifier(True)
+    cls_urls = {}
+    for cls, _, label in nested(labels, depth=2):
+        csf_idx, name = label
+        wnid = wnidOfName(name)
+        urls = fetchImageUrlsOfWnid(wnid)
+        if cls not in cls_urls:
+            cls_urls[cls] = []
+        cls_urls[cls] += [(url, csf_idx) for url in urls]
+
+    counter = {cls : 0 for cls in classes}
+    for cls, data in cls_urls.items():
+        shuffle(data)
+        _data = data[:100]
+        data = data[100:]
+        
+        for url, csf_idx in _data:
+            try:
+                img = imread(url)
+            except:
+                _data.append(data[0])
+                data = data[1:]
+                continue
+            if img is None:
+                continue
+            idx = counter[cls]
+            counter[cls] += 1
+            file_name = "{}_{}_{}.jpg".format(getClassName(cls), csf_idx, idx)
+            file_path = join(PATH.DATA.IMAGENET.IMGS, file_name)
+            saveImage(img, file_path, plugin='skimage')
+    
 
 '''
 Images ID, Classes Mapping
@@ -42,15 +79,16 @@ def mapDatasets(sources):
     maps[1].append("background")
     sources = sorted(sources)
     for source in sources:
-        if isPASCAL(source):
+        if source == PASCAL:
             mapPASCAL(maps, source)
-        elif isCOCO(source):
+        elif source == COCO:
             mapCOCO(maps, source)
             
     maps[0] = [(idx, ) + _map for idx, _map in enumerate(maps[0])]
     paths = [PATH.DATA.IMG_MAP, PATH.DATA.CLS_MAP, PATH.DATA.IMG_CLS_MAP]
     for _map, _path in zip(maps, paths):
         saveObject(_map, _path)
+    return maps
 
 def mapPASCAL(maps, source):
     print ("Mapping PASCAL Part dataset...")
@@ -108,17 +146,41 @@ def mapCOCO(maps, source):
             img_cls_map.append(img_cls)
             img_ids.append((img_id, source, subset))
 
+def mapImageNet(maps=None):
+    if maps:
+        img_ids, _, img_cls_map = maps
+    else:
+        img_ids = loadObject(PATH.DATA.IMG_MAP)
+        img_cls_map = loadObject(PATH.DATA.IMG_CLS_MAP)
+    
+    img_dir = PATH.DATA.IMAGENET.IMGS
+    data = getFilesInDirectory(img_dir, "jpg")
+    data = [(x[x.rfind('/')+1:-4], IMAGENET) for x in data]
+
+    idx = len(img_ids)
+    for _data in data:
+        img_ids.append((idx, ) + _data)
+        img_id = _data[0]
+        cls = getClassID(img_id.split('_')[0])
+        img_cls_map.append([img_id, cls])
+        idx += 1
+        
+    saveObject(img_ids, PATH.DATA.IMG_MAP)
+    saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
+
+    
 '''
 Main program
 
 '''
 
 if __name__=='__main__':
-    sources = CONFIG.DATA.SOURCES
-    print ("Datasets preparation: downloading ...")
-    downloadDatasets(sources)
-    print ("Datasets preparation: download finished")
-    print ("Datasets preparation: mapping images ...")
-    mapDatasets(sources)
-    print ("Datasets preparation: mapping finished")
-    
+    # datasets = PATH.DIS.DATASETS
+    # downloadDatasets(datasets)
+    # mapDatasets(datasets)
+
+    datasets = CONFIG.VIS.DATASETS
+    if IMAGENET in datasets:
+        from utils.helper.imagenet_helper import *
+        #downloadImageNet()
+        mapImageNet()

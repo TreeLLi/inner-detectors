@@ -9,10 +9,20 @@ import sys
 from os.path import join, dirname, abspath
 from addict import Dict as adict
 
-_curr_path = dirname(abspath(__file__))
-_root_path = join(_curr_path, "..")
+curr_path = dirname(abspath(__file__))
+_root_path = join(curr_path, "..")
 if _root_path not in sys.path:
     sys.path.insert(0, _root_path)
+
+
+'''
+Marco
+
+'''
+
+PASCAL = 'PASCAL'
+COCO = 'COCO'
+IMAGENET = 'IMAGENET'
 
 
 '''
@@ -23,13 +33,10 @@ Config for program parameters
 
 CONFIG = adict()
 
-# datasets
-CONFIG.DATA.SOURCES = ['PASCAL', 'COCO']
-# true, generate descriptive statistics report for datasets
 CONFIG.DATA.STATISTICS = True
 
 # dissection
-
+CONFIG.DIS.DATASETS = [PASCAL, COCO]
 CONFIG.DIS.MODEL = "VGG16" # the model to be dissected
 
 CONFIG.DIS.IOU_THRESHOLD = 0.1
@@ -40,6 +47,9 @@ CONFIG.DIS.ANNO_PIXEL_THRESHOLD = 0
 CONFIG.DIS.REPORT_TEXT = True
 CONFIG.DIS.REPORT_FIGURE = False
 
+# visualisation
+CONFIG.VIS.DATASETS = [IMAGENET]
+
 # models
 CONFIG.MODEL.INPUT_DIM = (224, 224, 3)
 
@@ -48,7 +58,6 @@ CONFIG.MODEL.INPUT_DIM = (224, 224, 3)
 Config for program paths
 
 '''
-
 
 PATH = adict()
 
@@ -81,6 +90,13 @@ PATH.DATA.COCO = adict({
     "IMGS" : join(_coco_path, "images/{}2017")
 })
 
+_imagenet_path = join(_data_path, "imagenet")
+PATH.DATA.IMAGENET = adict({
+    "ROOT" : _imagenet_path,
+    "IMGS" : join(_imagenet_path, "images"),
+    "WORDS" : join(_imagenet_path, "words.txt"),
+    "ISA" : join(_imagenet_path, "wordnet.is_a.txt")
+})
 
 # output path
 PATH.OUT.ROOT = join(_root_path, "output/")
@@ -116,35 +132,25 @@ if CONFIG.DIS.MODEL == "VGG16":
     PATH.OUT.COR.REPORT = join(PATH.OUT.COR.ROOT, "correlation_report.txt")
 
 # model path
-_model_path = join(_root_path, "pre-models")
-
-PATH.MODEL.ROOT = _model_path        
+PATH.MODEL.ROOT = join(_root_path, "pre-models")       
 if CONFIG.DIS.MODEL == "VGG16":
-    PATH.MODEL.PARAM = join(_model_path, "vgg16/vgg16_param.npy")
-    PATH.MODEL.CONFIG = join(_model_path, "vgg16/vgg16_config.json")
+    _vgg16_path = join(PATH.MODEL.ROOT, "vgg16")
+    PATH.MODEL.PARAM = join(_vgg16_path, "vgg16_param.npy")
+    PATH.MODEL.CONFIG = join(_vgg16_path, "vgg16_config.json")
     PATH.MODEL.PROBE = join(_root_path, "src/vgg16_probe.txt")
     PATH.MODEL.FIELDMAPS = join(_vgg16_path, "vgg16_fieldmaps.pkl")
 
+    PATH.MODEL.CLASSES = join(_vgg16_path, "class_maps.txt")
 
 # test path
 PATH.TEST.ROOT = _test_path
-    
-'''
-Auxilary functions
 
-To determine status
 
 '''
+Remote URLs
 
+'''
 
-def isPASCAL(source):
-    if isinstance(source, str) and source.upper()=='PASCAL':
-        return True
-    else:
-        return False
+URL = adict()
 
-def isCOCO(source):
-    if isinstance(source, str) and source.upper()=='COCO':
-        return True
-    else:
-        return False
+URL.IMAGENET.IMG_URLS = "http://www.image-net.org/api/text/imagenet.synset.geturls"

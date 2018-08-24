@@ -162,16 +162,31 @@ Datasets Label Convertor
 '''
 
 CONV = {
-    "couch" : "sofa",
-    "potted plant" : "pottedplant",
-    "dining table" : "table",
-    "motorcycle" : "motorbike",
-    "airplane" : "aeroplane",
-    "tv" : "tvmoniter"
+    'PASCAL' : {
+        "couch" : "sofa",
+        "potted plant" : "pottedplant",
+        "dining table" : "table",
+        "motorcycle" : "motorbike",
+        "airplane" : "aeroplane",
+        "tv" : "tvmonitor",
+        'television' : 'tvmonitor',
+        'phone' : 'cell phone',
+        'ball' : 'sports ball',
+        'wineglass' : 'wine glass',
+        'ski' : 'skis'
+    },
+    'IMAGENET' : {
+        'tvmonitor' : 'television',
+        'tvmoniter' : 'television',
+        'cell phone' : 'phone',
+        'sports ball' : 'ball',
+        'wine glass' : 'wineglass',
+        'skis' : 'ski'
+    }
 }
 
-def convert(name):
+def convert(name, dst='PASCAL'):
     if name in CONV:
-        return CONV[name]
+        return CONV[dst][name]
     else:
         return name

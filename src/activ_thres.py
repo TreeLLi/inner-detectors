@@ -55,7 +55,7 @@ if __name__ == "__main__":
     num = pool._processes
     if not os.path.exists(file_path):
         print ("Can not find existing match results, thus beginning from scratch.")
-        bl = BatchLoader(amount=4000, mode="classes")
+        bl = BatchLoader(amount=4000, classes=0)
         probe_layers = loadObject(PATH.MODEL.PROBE)
         model = ModelAgent()
         field_maps = model.getFieldmaps()
