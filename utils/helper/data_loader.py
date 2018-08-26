@@ -132,7 +132,7 @@ class BatchLoader(object):
         
         # special loading mode
         if classes is not None:
-            if IMAGENET in sources:
+            if IMAGENET in sources and type(classes) != list:
                 classes = classesOfClassifier()
             self.initModeClasses(classes)
         if random:
@@ -154,7 +154,7 @@ class BatchLoader(object):
 
     def randomData(self):
         shuffle(self.data)
-            
+        
     def initDatasets(self, sources, amount):
         # config data to be loaded
         self.database = loadObject(PATH.DATA.IMG_MAP)
@@ -246,10 +246,14 @@ class BatchLoader(object):
                 img_source = sample[2]
                 img_idx = sample[0]
                 if hasattr(self, 'cls_counts'):
+                    classes = self.getImageInfo(img_idx)['classes']
+                    if all(cls not in self.cls_counts for cls in classes):
+                        num += 1
+                        continue
                     # mode 'classes': check if adding this sample
                     # will destroy balance of classes distribution
-                    classes = self.getImageInfo(img_idx)['classes']
-                    remgs = [self.cls_counts[cls]-1 for cls in classes]
+                    remgs = [self.cls_counts[cls]-1 if cls in self.cls_counts else 0
+                             for cls in classes]
                     if any(c < -1 for c in remgs):
                         # sample causing imbalance classes distribution
                         # ignore it and load one more
@@ -284,7 +288,8 @@ class BatchLoader(object):
                         
                     if hasattr(self, 'cls_counts'):
                         for cls in classes:
-                            self.cls_counts[cls] -= 1
+                            if cls in self.cls_counts:
+                                self.cls_counts[cls] -= 1
                         if all(c <= 0 for c in self.cls_counts.values()):
                             # finished, exist batch loading,
                             self.finish()

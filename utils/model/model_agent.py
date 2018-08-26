@@ -126,7 +126,7 @@ class ModelAgent:
         if 'switches' in results:
             _results.append(results['switches'])
         if prob:
-            cls = np.argmax(results['prob'], axis=1)
+            cls = np.argmax(results['prob'], axis=1).tolist()
             _results.append(cls)
 
         if len(_results) == 1:

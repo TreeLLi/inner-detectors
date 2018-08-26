@@ -22,6 +22,7 @@ from utils.helper.data_mapper import getClassName
 from utils.helper.dstruct_helper import nested, splitDict, mergeDict
 from utils.helper.file_manager import saveObject, loadObject, saveImage
 from utils.helper.plotter import revealMask
+from utils.helper.imagenet_helper import classesOfClassifier, classOfIndice
 from utils.dissection.helper import quanFilter
 from utils.dissection.activ_processor import reflect
 from utils.dissection.identification import loadIdent, conceptsOfUnit, crossLabelsOfUnit
@@ -48,8 +49,8 @@ Visualisation
 '''
 
 SAMPLES = {}
-NUM = 1
-def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
+NUM = CONFIG.VIS.NUM
+def visualise(ident, imgs, probs, img_infos, activ_maps=None, deconvs=None):
     if activ_maps is None and deconvs is None:
         raise Exception("Error - visualise: no data for visualisation.")
     
@@ -68,14 +69,17 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
 
         # create samples counter
         if ccp not in SAMPLES:
-            SAMPLES[ccp] = {k : set() for k in SAMPLE_TYPES}
+            SAMPLES[ccp] = {k : set() for k in CCP_TYPES}
         if ccp_unit_id not in SAMPLES:
-            SAMPLES[ccp_unit_id] = {k : set() for k in SAMPLE_TYPES}
-            
+            SAMPLES[ccp_unit_id] = {k : set() for k in UNIT_TYPES}
+        
         for idx, img in enumerate(imgs):
             info = img_infos[idx]
+            prob = probs[idx]
+            prob_name = getClassName(prob)
             img_id = info['id']
-            ccp_type, unit_type = getSampleType(img_id, info, ccp, unit_id)
+            img_labels = info['classes']
+            ccp_type, unit_type = getSampleType(prob, img_labels, ccp, unit_id)
 
             # same image, different units
             ccp_samples = SAMPLES[ccp][ccp_type]
@@ -87,12 +91,12 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
             else:
                 save_ccp_sample = False
             if save_ccp_sample:
-                img_unit_dir = os.path.join(PATH.OUT.VIS.ROOT, "{}/images/{}_{}/"
-                                            .format(cls, img_id, ccp_type))
+                img_unit_dir = os.path.join(PATH.OUT.VIS.ROOT, "{}/images/{}_{}_{}/"
+                                            .format(cls, img_id, ccp_type, prob_name))
                 img_unit_path = "{}_{}_{}_{:.2f}_{}".format(rank, layer, unit, iou, unit_type)
                 
-                if ccp_type != unit_type and unit_type == 'positive':
-                    cross = crossLabelsOfUnit(unit_id, info['classes'])
+                if ccp_type != unit_type and 'p' in unit_type:
+                    cross = crossLabelsOfUnit(unit_id, img_labels)
                     cross_labels = ""
                     for label in cross:
                         cross_labels += getClassName(label) + '-'
@@ -116,14 +120,11 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
             
             # same unit, different images
             unit_samples = SAMPLES[ccp_unit_id][unit_type]
-            if ccp_type == unit_type:
-                if img_id in unit_samples:
-                    save_unit_sample = True
-                elif len(unit_samples) < NUM:
-                    save_unit_sample = True
-                    unit_samples.add(img_id)
-                else:
-                    save_unit_sample = False
+            if img_id in unit_samples:
+                save_unit_sample = True
+            elif len(unit_samples) < NUM:
+                save_unit_sample = True
+                unit_samples.add(img_id)
             else:
                 save_unit_sample = False
             if save_unit_sample:
@@ -131,38 +132,52 @@ def visualise(ident, imgs, img_infos, activ_maps=None, deconvs=None):
                                             .format(cls, layer, rank, unit, iou))
                 if activ_maps:
                     amap = activ_map[idx]
-                    vis = revealMask(img, amap, alpha=0.95)
-                    unit_img_path = unit_img_dir + "{}_{}.png".format(img_id, unit_type)
+                    vis = revealMask(img, amap, alpha=0.90)
+                    unit_img_path = unit_img_dir + "{}_{}_{}.png".format(img_id, unit_type, prob_name)
                     saveImage(vis, unit_img_path)
                 if deconvs:
                     _deconv = deconv[idx]
-                    unit_img_path = unit_img_dir + "{}_{}_d.png".format(img_id, unit_type)
+                    unit_img_path = unit_img_dir + "{}_{}_{}_d.png".format(img_id, unit_type, prob_name)
                     saveImage(_deconv, unit_img_path)
                 # raw image
                 unit_img_raw_path = unit_img_dir + "{}.png".format(img_id)
                 if not os.path.exists(unit_img_raw_path):
                     saveImage(img, unit_img_raw_path)
 
-SAMPLE_TYPES = ['positive', 'negative']
-def getSampleType(img_id, img_info, ccp, unit_id):
-    smp_types = [None, None]
-    # type of sample for the concept
-    img_labels = img_info['classes']
-    smp_types[0] = 'positive' if ccp in img_labels else 'negative'
-        
-    # type of samples for the unit
-    unit_ccps = conceptsOfUnit(unit_id, top=10)
-    _type = any(label in unit_ccps for label in img_labels)
-    _type = 'positive' if _type else 'negative'
-    smp_types[1] = _type
-    return smp_types
-    
-def finished():
-    for ccp, smp_type in product(SAMPLES, SAMPLE_TYPES):
-        samples = SAMPLES[ccp][smp_type]
-        if len(samples) < NUM:
-            return False
+CCP_TYPES = ['tp', 'tn', 'fp', 'fn']
+UNIT_TYPES = ['tp', 'tntp', 'tnfp', 'tnfn', 'tntn', 'fpt', 'fpf', 'fnp', 'fnn']
+def getSampleType(prob, labels, ccp, unit_id):
+    pn = 'p' if prob == ccp else 'n'
+    tf = (pn=='p' and ccp in labels) or (pn=='n' and ccp not in labels)
+    tf = 't' if tf else 'f'
+    ccp_type = tf + pn
 
+    unit_ccps = conceptsOfUnit(unit_id, top=10)
+    pn = 'p' if prob in unit_ccps else 'n'
+    tf = 't' if any(label in unit_ccps for label in labels) else 'f'
+    if ccp_type == 'tp':
+        unit_type = ccp_type
+    elif ccp_type == 'fn':
+        unit_type = ccp_type + pn
+    elif ccp_type == 'fp':
+        unit_type = ccp_type + tf
+    else:
+        unit_type = ccp_type + tf + pn
+    
+    return ccp_type, unit_type
+    
+def finished(ident):
+    if any(cls not in SAMPLES for cls in ident.keys()):
+        return False
+    
+    for k, v in SAMPLES.items():
+        types = CCP_TYPES if k in ident.keys() else UNIT_TYPES
+        for t in types:
+            if t not in v:
+                return False
+            elif len(v[t]) < NUM:
+                return False
+    
     return True
 
 def process(activ_maps, field_maps):
@@ -178,12 +193,13 @@ Main Program
 
 if __name__ == "__main__":
     batch_size = 1
-    bl = BatchLoader(batch_size=batch_size, classes=0, random=True)
+    bl = BatchLoader(amount=10, sources=CONFIG.VIS.DATASETS, batch_size=batch_size, classes=[1], random=True)
     model = ModelAgent(input_size=batch_size, deconv=True)
     field_maps = model.getFieldmaps()
     probe_layers = loadObject(PATH.MODEL.PROBE)
 
-    ident = loadIdent(top=10, mode='concept', organise=True, filtering=0)
+    ident = loadIdent(top=10, mode='concept', organise=True, filtering=classesOfClassifier())
+    ident = {1 : ident[1]}
     probe_units = poolUnits(ident)
     
     num = cpu_count()
@@ -194,7 +210,8 @@ if __name__ == "__main__":
         img_infos = bl.getImageInfo(img_ids)
 
         print ("Activation Maps: fetching...")
-        activ_maps, switches = model.getActivMaps(imgs, probe_layers)
+        activ_maps, switches, probs = model.getActivMaps(imgs, probe_layers, prob=True)
+        probs = classOfIndice(probs)
         activ_maps = {k : activ_maps[k] for k in probe_units}
         
         # Network Dissection
@@ -212,11 +229,11 @@ if __name__ == "__main__":
         
         print ("Visualisation: beginning...")
         # visualise(ident, imgs, img_infos, activ_maps=reflect_amaps)
-        visualise(ident, imgs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
+        visualise(ident, imgs, probs, img_infos, activ_maps=reflect_amaps, deconvs=deconv_amaps)
         reflect_amaps = None
         deconv_amaps = None
         
-        if finished():
+        if finished(ident):
             print ("Finish")
             bl.finish()
         

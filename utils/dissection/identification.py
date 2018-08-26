@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 import time
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -15,7 +15,7 @@ from utils.dissection.helper import iou
 from utils.model.model_agent import isUnitID, splitUnitID
 from utils.helper.data_loader import weightedVal
 from utils.helper.data_mapper import getClasses
-from utils.helper.dstruct_helper import nested, sortDict, reverseDict, filterDict
+from utils.helper.dstruct_helper import nested, sortDict, reverseDict, filterDict, splitDict, mergeDict
 from utils.helper.file_manager import loadObject
 
 
@@ -96,6 +96,18 @@ def loadIdent(matches=None,
     return matches
 
 def organiseMatches(matches, sorting=False, top=None):
+    num = cpu_count()
+    split = splitDict(matches, amount=num)
+    matches = []
+    for _matches in split:
+        if _matches:
+            matches.append(_matches)
+    with Pool() as pool:
+        params = [(_matches, sorting, top) for _matches in matches]
+        matches = pool.starmap(_organiseMatches, params)
+    return mergeDict(matches)
+
+def _organiseMatches(matches, sorting, top):
     organised = {}
     for ccp, unit_id, m in nested(matches, depth=2):
         if ccp not in organised:
@@ -107,17 +119,13 @@ def organiseMatches(matches, sorting=False, top=None):
         organised[ccp][layer][unit] = m
 
     if sorting or top:
-        pool = Pool()
         for ccp, layer, units in nested(organised, depth=2):
-            params = (units, False, [0], True, True)
-            organised[ccp][layer] = pool.apply_async(sortDict, args=params)
-        pool.close()
-        pool.join()
-        for ccp, layer, units in nested(organised, depth=2):
-            units = units.get()
-            organised[ccp][layer] = units
+            units = sortDict(units, indices=[0], merge=True)
             if top:
                 organised[ccp][layer] = units[:top] if top >= 0 else units[top:]
+            else:
+                organised[ccp][layer] = units
+    
     return organised
 
     
