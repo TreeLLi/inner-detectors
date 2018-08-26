@@ -30,7 +30,11 @@ def classOfIndice(indice):
     mapping = loadClassifierClasses()
     name = mapping[indice]
     wnid = wnidOfName(name)
-    sups = superCateNamesOfWnid(wnid)
+    sups = set()
+    for _wnid in wnid:
+        _sups = superCateNamesOfWnid(_wnid)
+        if _sups:
+            sups = sups | _sups
     cls_ids = getClasses()
     cls_names = getClassNames(cls_ids)
     for idx, cls in enumerate(cls_names):
@@ -100,12 +104,15 @@ def loadClassifierClasses():
 
 def wnidOfName(name):
     wnid_names = loadWnidNames()
+    wnids = set()
     for wnid, _name in wnid_names.items():
         if _name == name:
-            return wnid
-    raise Exception("Error: name {} to be searched for wnid is not found.".format(name))
-    return None
-
+            wnids.add(wnid)
+    if wnids:
+        return wnids
+    else:
+        raise Exception("Error: name {} to be searched for wnid is not found.".format(name))
+    
 def nameOfWnid(wnid, split=False, conver=True):
     wnid_names = loadWnidNames()
     if wnid in wnid_names:
@@ -131,11 +138,13 @@ def superCateIdsOfWnid(wnid):
 
 def superCateNamesOfWnid(wnid):
     sup_wnids = superCateIdsOfWnid(wnid)
-    names = []
-    for sup_wnid in sup_wnids:
-        names += nameOfWnid(sup_wnid, split=True)
-    return names
-
+    if sup_wnids:
+        names = set()
+        for sup_wnid in sup_wnids:
+            names = names | set(nameOfWnid(sup_wnid, split=True))
+        return names
+    else:
+        return None
 
 '''
 ImageNet API

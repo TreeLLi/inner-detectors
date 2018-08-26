@@ -195,7 +195,7 @@ class TestImageNetHelper(TestBase):
         name = "Depression, Great Depression"
         wnid = "n15294211"
 
-        self.assertEqual(wnidOfName(name), wnid)
+        self.assertEqual(wnidOfName(name), {wnid})
         self.assertEqual(nameOfWnid(wnid), name)
 
     def test_super_cates(self):

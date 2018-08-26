@@ -23,6 +23,10 @@ Test Base Class
 
 '''
 
+def isIterable(a):
+    _type = type(a)
+    return _type==list or _type==tuple or _type==set
+
 count = {}
 
 class TestBase(unittest.TestCase):
@@ -79,7 +83,7 @@ class TestBase(unittest.TestCase):
         return super(TestBase, self).assertListEqual(first, second, msg)
 
     def assertContain(self, first, second, msg=None):
-        if isinstance(first, list) and isinstance(second, list):
+        if isIterable(second):
             return self.assertTrue(all(sec in first for sec in second))
         else:
             self.assertTrue(second in first, msg)
