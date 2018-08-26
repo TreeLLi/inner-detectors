@@ -53,9 +53,10 @@ Figure plot
 
 '''
 
-def plotFigure(x, y, title=None, form='line', params=None, show=False):
+def plotFigure(x, y, title=None, form='line', ticks=None, labels=None, params=None, show=False):
     if title:
         plt.figure(title)
+        plt.title(title)
     else:
         plt.figure()
         
@@ -85,7 +86,19 @@ def plotFigure(x, y, title=None, form='line', params=None, show=False):
             
         if 'ylim' in params:
             plt.ylim(params['ylim'])
-    
+
+    if ticks:
+        if 'x' in ticks:
+            plt.xticks(x, ticks['x'])
+        if 'y' in ticks:
+            plt.yticks(y, ticks['y'])
+
+    if labels:
+        if 'x' in labels:
+            plt.xlabel(labels['x'])
+        if 'y' in labels:
+            plt.ylabel(labels['y'])
+            
     if show:
         plt.show()
     # return plt for further figure saving

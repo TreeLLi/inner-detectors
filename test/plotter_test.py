@@ -70,16 +70,13 @@ class TestPlotter(TestBase):
         
     def test_plot_figure(self):
         self.log()
-        x = np.asarray([i for i in range(0, 10)])
-        x = [x + i for i in range(0, 10)]
-        y = list(reversed(x))
-        
-        plot = plotFigure(x, y, show=True)
+        x = [1, 2]
+        y = [1, 2]
+        ticks = {'x' : ['a', 'b']}
+        title = 'test'
+        labels = {'x':'x', 'y':'y'}
+        plot = plotFigure(x, y, title=title, ticks=ticks, form='spot', show=True, labels=labels)
 
-        path = os.path.join(PATH.TEST.ROOT, "test_figure.png")
-        saveFigure(plot, path)
-        os.remove(path)
-        
 
 '''
 Main program
