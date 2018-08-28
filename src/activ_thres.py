@@ -51,8 +51,6 @@ if __name__ == "__main__":
     quans = [x for x in range(0, 100, 10)]
     file_path = PATH.OUT.ACTIV_THRESH
 
-    pool = Pool()
-    num = pool._processes
     if not os.path.exists(file_path):
         print ("Can not find existing match results, thus beginning from scratch.")
         bl = BatchLoader(amount=4000, classes=0)
@@ -69,7 +67,8 @@ if __name__ == "__main__":
             activ_maps = model.getActivMaps(imgs, probe_layers)
             activ_maps = splitDict(activ_maps, num)
             params = [(amap, field_maps, annos, quans) for amap in activ_maps]
-            batch_matches = pool.starmap(process, params)
+            with Pool() as pool:
+                batch_matches = pool.starmap(process, params)
             print ("Combine matches...")
             for batch_match in batch_matches:
                 for idx, bm in enumerate(batch_match):
@@ -83,26 +82,29 @@ if __name__ == "__main__":
 
     # match results analysis
     # overall comparison
-    means = pool.starmap(dictMean, [(m, 0) for m in matches])
-    print (means)
-    plt = plotFigure(quans, means, title="means v.s. quantiles", show=True)
+    # with Pool() as pool:
+    #     means = pool.starmap(dictMean, [(m, 0) for m in matches])
+    # labels = {'x' : 'quantile', 'y' : 'mean IoU'}
+    # plt = plotFigure(quans, means, title="means v.s. quantiles", show=True)
+    
+    # saveFigure(plt, os.path.join(plot_path, "overall.png"))
 
+    plot_path = os.path.join(PATH.OUT.ROOT, "activ_thres")
     # sort and comparison
-    # data = {}
-    # for idx, _matches in enumerate(matches):
-    #     for unit_id, ccp_matches in _matches.items():
-    #         for ccp, m in ccp_matches.items():
-    #             if unit_id not in data:
-    #                 data[unit_id] = {}
-    #             unit_data = data[unit_id]
+    data = {}
+    for idx, _matches in enumerate(matches):
+        for unit_id, ccp, m in nested(_matches, depth=2):
+            if unit_id not in data:
+                data[unit_id] = {}
+            unit_data = data[unit_id]
                 
-    #             if ccp not in unit_data:
-    #                 unit_data[ccp] = []
-    #             unit_ccp_data = unit_data[ccp]
-    #             unit_ccp_data.append(m[0])
+            if ccp not in unit_data:
+                unit_data[ccp] = []
+            unit_ccp_data = unit_data[ccp]
+            unit_ccp_data.append(m[0])
 
-    # plot_path = os.path.join(PATH.OUT.ROOT, "activ_thres")
-    # for unit_id, ccp_data in data.items():
-    #     file_path = os.path.join(plot_path, unit_id + ".png")
-    #     plt = plotFigure(quans, ccp_data, title=unit_id)
-    #     saveFigure(plt, file_path)
+    labels = {'x' : 'quantile', 'y' : 'IoU'}
+    for unit_id, ccp_data in data.items():
+        file_path = os.path.join(plot_path, unit_id + ".png")
+        plt = plotFigure(quans, ccp_data, title=unit_id, labels=labels)
+        saveFigure(plt, file_path)

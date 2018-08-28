@@ -8,6 +8,8 @@ To match semantic concepts with hidden units in intermediate layers
 
 import os, sys
 from multiprocessing import Pool
+from random import shuffle
+import matplotlib.pyplot as plt
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -17,14 +19,14 @@ if root_path not in sys.path:
 from src.config import CONFIG, PATH
 
 from utils.helper.data_loader import BatchLoader
-from utils.helper.data_mapper import getClassName
-from utils.helper.dstruct_helper import splitDict
-from utils.helper.file_manager import saveObject, loadObject
-from utils.model.model_agent import ModelAgent
+from utils.helper.data_mapper import getClassName, getClasses
+from utils.helper.dstruct_helper import splitDict, sortDict, filterDict
+from utils.helper.file_manager import saveObject, loadObject, saveFigure
+from utils.model.model_agent import ModelAgent, splitUnitID
 from utils.dissection.activ_processor import reflect
 from utils.dissection.identification import matchActivsAnnos, combineMatches
 
-    
+
 '''
 Match annotaions and activation maps
 
@@ -143,32 +145,98 @@ Main program
 
 
 if __name__ == "__main__":
-    bl = BatchLoader(amount=100)
-    probe_layers = loadObject(PATH.MODEL.PROBE)    
-    model = ModelAgent()
-    field_maps = model.getFieldmaps()
+    path = PATH.OUT.IDE.DATA.UNIT
+    if not os.path.exists(path):
+        bl = BatchLoader(amount=100)
+        probe_layers = loadObject(PATH.MODEL.PROBE)    
+        model = ModelAgent()
+        field_maps = model.getFieldmaps()
 
-    pool = Pool()
-    num = pool._processes
-    matches = None
-    while bl:
-        batch = bl.nextBatch()
-        images = batch[1]
-        annos = batch[2]
+        pool = Pool()
+        num = pool._processes
+        matches = None
+        while bl:
+            batch = bl.nextBatch()
+            images = batch[1]
+            annos = batch[2]
 
-        activ_maps = model.getActivMaps(images, probe_layers)
-        activ_maps = splitDict(activ_maps, num)
-        params = [(amap, field_maps, annos) for amap in activ_maps]
-        print ("Reflecting and matching activation maps...")
-        batch_matches = pool.starmap(reflectAndMatch, params)
-        batch_match = {}
-        for m in batch_matches:
-            batch_match = {**batch_match, **m}
+            activ_maps = model.getActivMaps(images, probe_layers)
+            activ_maps = splitDict(activ_maps, num)
+            params = [(amap, field_maps, annos) for amap in activ_maps]
+            print ("Reflecting and matching activation maps...")
+            batch_matches = pool.starmap(reflectAndMatch, params)
+            batch_match = {}
+            for m in batch_matches:
+                batch_match = {**batch_match, **m}
+                
+            print ("Integrating matches results of a batch into final results ...")
+            matches = combineMatches(matches, batch_match)
+            batch_matches = None
+        
+            bl.reportProgress()
+        
+        reportMatchResults(matches)
+    else:
+        matches = loadObject(path)
+        print ("Load matches results from existing data file.")
+
+    # analyse results
+    counter = {}
+    num_per_layer = 10
+    path = PATH.OUT.IDE.FIGURE.UNIT
+    classes = getClasses(order=0)
+    items = list(matches.items())
+    shuffle(items)
+    for unit_id, ccp_match in items:
+        layer, unit = splitUnitID(unit_id)
+        if layer not in counter:
+            counter[layer] = num_per_layer
+        counter[layer] = counter[layer] - 1
+        count = counter[layer]
+        if count < 0:
+            continue
+
+        print (layer, count)
+        ccp_match = filterDict(ccp_match, classes)
+        _matches = sortDict(ccp_match, indices=[0], merge=True)
+        x_tick = [getClassName(m[0], full=True) for m in _matches]
+        y = [m[1] for m in _matches]
+        x = range(len(x_tick))
+
+        plt.figure(unit_id, figsize=(15, 10))
+        plt.bar(left=x, height=y)
+        plt.xticks(x, x_tick, rotation=60, ha='right')
+        plt.ylim((0, 0.5))
+        plt.title(unit_id)
+        plt.xlabel('concept')
+        plt.ylabel('IoU')
+
+        file_name = os.path.join(path, "{}.png".format(unit_id))
+        saveFigure(plt, file_name)
+
+    path = PATH.OUT.IDE.DATA.CONCEPT
+    matches = loadObject(path)
+    path = PATH.OUT.IDE.FIGURE.CONCEPT
+    for ccp, unit_match in matches.items():
+        data = {'overall' : []}
+        name = getClassName(ccp)
+        for unit_id, match in unit_match.items():
+            layer, unit = splitUnitID(unit_id)
+            if layer not in data:
+                data[layer] = []
+            iou = match[0]
+            data['overall'].append(iou)
+            data[layer].append(iou)
             
-        print ("Integrating matches results of a batch into final results ...")
-        matches = combineMatches(matches, batch_match)
-        batch_matches = None
-        
-        bl.reportProgress()
-        
-    reportMatchResults(matches)
+        for layer, _data in data.items():
+            file_name = "{} - {}".format(name, layer)
+            plt.figure(file_name)
+            plt.hist(_data, bins=20, facecolor='blue', edgecolor='black', alpha=0.7)
+            plt.xlabel('IoU')
+            plt.ylabel('frequency')
+            plt.xlim((0, 0.5))
+            plt.title(file_name)
+
+            file_name = os.path.join(path, "{}.png".format(file_name))
+            saveFigure(plt, file_name)
+            

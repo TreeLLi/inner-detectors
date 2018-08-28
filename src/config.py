@@ -122,7 +122,10 @@ if CONFIG.DIS.MODEL == "VGG16":
     PATH.OUT.IDE.DATA.ROOT = join(PATH.OUT.IDE.ROOT, "data")
     PATH.OUT.IDE.DATA.UNIT = join(PATH.OUT.IDE.DATA.ROOT, "vgg16_unit_matches.pkl")
     PATH.OUT.IDE.DATA.CONCEPT = join(PATH.OUT.IDE.DATA.ROOT, "vgg16_concept_matches.pkl")
-
+    PATH.OUT.IDE.FIGURE.ROOT = join(PATH.OUT.IDE.ROOT, "figure")
+    PATH.OUT.IDE.FIGURE.UNIT = join(PATH.OUT.IDE.FIGURE.ROOT, "unit")
+    PATH.OUT.IDE.FIGURE.CONCEPT = join(PATH.OUT.IDE.FIGURE.ROOT, "concept")
+    
     # visualistion
     PATH.OUT.VIS.ROOT = join(_vgg16_path, "visualisation")
     
