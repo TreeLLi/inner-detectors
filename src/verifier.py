@@ -24,7 +24,7 @@ from utils.helper.plotter import plotFigure
 from utils.helper.data_processor import patch
 from utils.helper.dstruct_helper import nested, splitList
 from utils.helper.file_manager import saveObject, loadObject, saveFigure
-from utils.dissection.activ_processor import activAttrs
+from utils.dissection.activ_processor import activAttrs, correlation
 from utils.model.model_agent import ModelAgent, splitUnitID
 
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         attr_changes = loadObject(data_path)
 
     # analysis for assessing if identification results correct
-    concept_matches = loadObject(PATH.OUT.CONCEPT_MATCHES)
+    concept_matches = loadObject(PATH.OUT.IDE.DATA.CONCEPT)
     data_x = {}
     data_y = {}
     for ccp, unit, match in nested(concept_matches, depth=2):
@@ -157,9 +157,14 @@ if __name__ == "__main__":
     for ccp, ccp_x in data_x.items():
         ccp_y = data_y[ccp]
         ccp = getClassName(ccp, full=True)
-        params = {'xlim' : (0, 1), 'ylim' : (-1, 1)}
-        figure = plotFigure(ccp_x, ccp_y, title=ccp, form='spot', params=params)
+        params = {'xlim' : (0, 0.6), 'ylim' : (-1, 1)}
+        labels = {'x' : 'IoU', 'y' : 'change of average activation'}
+        figure = plotFigure(ccp_x, ccp_y, form='spot', labels=labels, params=params)
 
+        coeff, pvalue = correlation(ccp_x, ccp_y)
+        text = "coeffi: {:.3f}\npvalue: {:.3f}".format(coeff, pvalue)
+        figure.text(0.4, 0.5, text, fontsize=20)
+        
         figure_path = join(plot_path, ccp+".png")
         saveFigure(figure, figure_path)
     

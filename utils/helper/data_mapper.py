@@ -148,11 +148,11 @@ def sortAsClass(mapping):
            for sub_cls in cls:
                cls_id = getClassID(sub_cls)
                if cls_id in mapping:
-                   sorted.append([sub_cls] + mapping[cls_id])
+                   sorted.append([sub_cls, cls_id] + mapping[cls_id])
         else:
             cls_id = getClassID(cls)
             if cls_id in mapping:
-                sorted.append([cls] + mapping[cls_id])
+                sorted.append([cls, cls_id] + mapping[cls_id])
     return sorted
 
 

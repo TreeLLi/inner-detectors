@@ -9,6 +9,7 @@ To assess the sensitivity of identification results with respect to activation t
 import os, sys
 import time, datetime
 from multiprocessing import Pool
+import matplotlib
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -104,6 +105,8 @@ if __name__ == "__main__":
             unit_ccp_data.append(m[0])
 
     labels = {'x' : 'quantile', 'y' : 'IoU'}
+    matplotlib.rc('xtick', labelsize=20)
+    matplotlib.rc('ytick', labelsize=20)
     for unit_id, ccp_data in data.items():
         file_path = os.path.join(plot_path, unit_id + ".png")
         plt = plotFigure(quans, ccp_data, title=unit_id, labels=labels)

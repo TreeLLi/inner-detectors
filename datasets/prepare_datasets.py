@@ -175,12 +175,12 @@ Main program
 '''
 
 if __name__=='__main__':
-    # datasets = PATH.DIS.DATASETS
-    # downloadDatasets(datasets)
-    # mapDatasets(datasets)
+    datasets = CONFIG.DIS.DATASETS
+    downloadDatasets(datasets)
+    mapDatasets(datasets)
 
-    datasets = CONFIG.VIS.DATASETS
-    if IMAGENET in datasets:
-        from utils.helper.imagenet_helper import *
-        #downloadImageNet()
-        mapImageNet()
+    # datasets = CONFIG.VIS.DATASETS
+    # if IMAGENET in datasets:
+    #     from utils.helper.imagenet_helper import *
+    #     #downloadImageNet()
+    #     mapImageNet()

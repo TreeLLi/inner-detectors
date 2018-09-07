@@ -75,7 +75,8 @@ PATH.DATA.ROOT = _data_path
 PATH.DATA.IMG_MAP = join(_data_path, "img_ids.txt")
 PATH.DATA.CLS_MAP = join(_data_path, "class_maps.txt")
 PATH.DATA.IMG_CLS_MAP = join(_data_path, "img_cls_maps.txt")
-PATH.DATA.STATISTICS = join(_data_path, "annos_statistics.txt")
+PATH.DATA.STATISTICS.REPORT = join(_data_path, "annos_statistics.txt")
+PATH.DATA.STATISTICS.DATA = join(_data_path, "annos_statistics.pkl")
 
 _pascal_path = join(_data_path, "pascal_part")
 PATH.DATA.PASCAL = adict({

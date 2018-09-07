@@ -36,12 +36,12 @@ Data Description
 '''
 
 if CONFIG.DATA.STATISTICS:
-    if not exists(PATH.DATA.STATISTICS):
+    if not exists(PATH.DATA.STATISTICS.DATA):
         des = {}
         DESCRIBE_DATA = True
     else:
         print ("Data statistics have already existed at {}"
-               .format(PATH.DATA.STATISTICS))
+               .format(PATH.DATA.STATISTICS.DATA))
         DESCRIBE_DATA = False
 else:
     DESCRIBE_DATA = False
@@ -53,23 +53,17 @@ def describeData(annos, des):
         if cls_id in des:
             cls_des = des[cls_id]
         else:
-            cls_des = [0 for x in range(8)]
+            cls_des = [0 for x in range(2)]
             des[cls_id] = cls_des
         updateClassDes(cls_des, cls_mask)
     return des
 
 def updateClassDes(cls_des, mask):
-    row_num = np.asarray([np.sum(row>0) for row in mask])
-    row_num = row_num[row_num>0]
-    col_num = np.asarray([np.sum(mask[:, i]>0) for i in range(mask.shape[1])])
-    col_num = col_num[col_num>0]
     c_1 = cls_des[0]
 
-    ops = [min, max, np.mean]
-    vals = [op(num) for num in [row_num, col_num] for op in ops]
-    for idx, val in enumerate(cls_des[1:-1]):
-        cls_des[idx+1] = weightedVal(val, c_1, vals[idx])
-    cls_des[-1] = weightedVal(cls_des[-1], c_1, np.sum(mask>0))
+    num_pixels = np.sum(mask>0)
+    ratio = num_pixels / float(mask.shape[0] * mask.shape[1])
+    cls_des[-1] = weightedVal(cls_des[-1], c_1, ratio)
     cls_des[0] += 1
 
 def weightedVal(v_1, c_1, v_2, c_2=1):
@@ -339,7 +333,8 @@ class BatchLoader(object):
             saveObject(img_cls_map, PATH.DATA.IMG_CLS_MAP)
         if DESCRIBE_DATA:
             print ("Data statistics: saved")
-            saveObject(sortAsClass(des), PATH.DATA.STATISTICS)
+            saveObject(des, PATH.DATA.STATISTICS.DATA)
+            saveObject(sortAsClass(des), PATH.DATA.STATISTICS.REPORT)
 
             
     '''

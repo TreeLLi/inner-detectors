@@ -10,6 +10,7 @@ import os, sys
 from multiprocessing import Pool
 from random import shuffle
 import matplotlib.pyplot as plt
+import matplotlib
 
 curr_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.join(curr_path, "..")
@@ -20,11 +21,12 @@ from src.config import CONFIG, PATH
 
 from utils.helper.data_loader import BatchLoader
 from utils.helper.data_mapper import getClassName, getClasses
-from utils.helper.dstruct_helper import splitDict, sortDict, filterDict
+from utils.helper.dstruct_helper import splitDict, sortDict, filterDict, nested
 from utils.helper.file_manager import saveObject, loadObject, saveFigure
+from utils.helper.plotter import plotFigure
 from utils.model.model_agent import ModelAgent, splitUnitID
-from utils.dissection.activ_processor import reflect
-from utils.dissection.identification import matchActivsAnnos, combineMatches
+from utils.dissection.activ_processor import reflect, correlation
+from utils.dissection.identification import matchActivsAnnos, combineMatches, loadIdent
 
 
 '''
@@ -181,62 +183,89 @@ if __name__ == "__main__":
         print ("Load matches results from existing data file.")
 
     # analyse results
-    counter = {}
-    num_per_layer = 10
-    path = PATH.OUT.IDE.FIGURE.UNIT
-    classes = getClasses(order=0)
-    items = list(matches.items())
-    shuffle(items)
-    for unit_id, ccp_match in items:
-        layer, unit = splitUnitID(unit_id)
-        if layer not in counter:
-            counter[layer] = num_per_layer
-        counter[layer] = counter[layer] - 1
-        count = counter[layer]
-        if count < 0:
-            continue
+    # counter = {}
+    # num_per_layer = 10
+    # path = PATH.OUT.IDE.FIGURE.UNIT
+    # classes = getClasses(order=0)
+    # items = list(matches.items())
+    # shuffle(items)
+    # matplotlib.rc('ytick', labelsize=15)
+    # for unit_id, ccp_match in items:
+    #     layer, unit = splitUnitID(unit_id)
+    #     if layer not in counter:
+    #         counter[layer] = num_per_layer
+    #     counter[layer] = counter[layer] - 1
+    #     count = counter[layer]
+    #     if count < 0:
+    #         continue
 
-        print (layer, count)
-        ccp_match = filterDict(ccp_match, classes)
-        _matches = sortDict(ccp_match, indices=[0], merge=True)
-        x_tick = [getClassName(m[0], full=True) for m in _matches]
-        y = [m[1] for m in _matches]
-        x = range(len(x_tick))
+    #     print (layer, count)
+    #     ccp_match = filterDict(ccp_match, classes)
+    #     _matches = sortDict(ccp_match, indices=[0], merge=True)
+    #     x_tick = [getClassName(m[0], full=True) for m in _matches]
+    #     y = [m[1] for m in _matches]
+    #     x = range(len(x_tick))
 
-        plt.figure(unit_id, figsize=(15, 10))
-        plt.bar(left=x, height=y)
-        plt.xticks(x, x_tick, rotation=60, ha='right')
-        plt.ylim((0, 0.5))
-        plt.title(unit_id)
-        plt.xlabel('concept')
-        plt.ylabel('IoU')
+    #     plt.figure(unit_id, figsize=(15, 10))
+    #     plt.bar(left=x, height=y)
+    #     plt.xticks(x, x_tick, rotation=60, ha='right')
+    #     plt.ylim((0, 0.5))
+    #     #plt.title(unit_id)
+    #     plt.xlabel('concept')
+    #     plt.ylabel('IoU', fontsize=15)
 
-        file_name = os.path.join(path, "{}.png".format(unit_id))
-        saveFigure(plt, file_name)
+    #     file_name = os.path.join(path, "{}.png".format(unit_id))
+    #     saveFigure(plt, file_name)
 
-    path = PATH.OUT.IDE.DATA.CONCEPT
-    matches = loadObject(path)
-    path = PATH.OUT.IDE.FIGURE.CONCEPT
-    for ccp, unit_match in matches.items():
-        data = {'overall' : []}
-        name = getClassName(ccp)
-        for unit_id, match in unit_match.items():
-            layer, unit = splitUnitID(unit_id)
-            if layer not in data:
-                data[layer] = []
-            iou = match[0]
-            data['overall'].append(iou)
-            data[layer].append(iou)
+    # path = PATH.OUT.IDE.DATA.CONCEPT
+    # matches = loadObject(path)
+    # path = PATH.OUT.IDE.FIGURE.CONCEPT
+    # size = 20
+    # matplotlib.rc('ytick', labelsize=size)
+    # matplotlib.rc('xtick', labelsize=size)
+    # for ccp, unit_match in matches.items():
+    #     data = {'overall' : []}
+    #     name = getClassName(ccp)
+    #     for unit_id, match in unit_match.items():
+    #         layer, unit = splitUnitID(unit_id)
+    #         if layer not in data:
+    #             data[layer] = []
+    #         iou = match[0]
+    #         data['overall'].append(iou)
+    #         data[layer].append(iou)
             
-        for layer, _data in data.items():
-            file_name = "{} - {}".format(name, layer)
-            plt.figure(file_name)
-            plt.hist(_data, bins=20, facecolor='blue', edgecolor='black', alpha=0.7)
-            plt.xlabel('IoU')
-            plt.ylabel('frequency')
-            plt.xlim((0, 0.5))
-            plt.title(file_name)
+    #     for layer, _data in data.items():
+    #         file_name = "{} - {}".format(name, layer)
+    #         plt.figure(file_name, figsize=(8, 7))
+    #         plt.hist(_data, bins=20, facecolor='blue', edgecolor='black', alpha=0.7)
+    #         plt.xlabel('IoU', fontsize=size)
+    #         plt.ylabel('frequency', fontsize=size)
+    #         plt.xlim((0, 0.5))
+    #         #plt.title(file_name)
 
-            file_name = os.path.join(path, "{}.png".format(file_name))
-            saveFigure(plt, file_name)
+    #         file_name = os.path.join(path, "{}.png".format(file_name))
+    #         saveFigure(plt, file_name)
+
+    matches = loadIdent(mode='concept', organise=True, top=10)
+    statistics = loadObject(PATH.DATA.STATISTICS.DATA)
+    x = []
+    y = []
+    for ccp, m in matches.items():
+        mean = [0, 0]
+        for _, idx, v in nested(m, depth=2):
+            mean[0] += v[1]
+            mean[1] += 1
+        mean = mean[0] / mean[1]
+
+        if ccp in statistics:
+            y.append(mean)
+            x.append(statistics[ccp][-1])
             
+    coeff, pvalue = correlation(x, y)
+    anno = "coeffi: {:.3f}\npvalue: {:.3f}".format(coeff, pvalue)
+    title = "average IoU vs. sizes of concepts"
+    labels = {'x' : 'size of concept', 'y' : 'average IoU'}
+    plot = plotFigure(x, y, form='spot', labels=labels)
+    plot.text(0.28, 0.04, anno, fontsize=15)
+    file_path = os.path.join(PATH.OUT.IDE.FIGURE.ROOT, "iou-size.png")
+    saveFigure(plot, file_path)

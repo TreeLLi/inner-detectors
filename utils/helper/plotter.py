@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 from addict import Dict as adict
 import matplotlib.pyplot as plt
+from matplotlib import rc
 
 
 '''
@@ -53,12 +54,15 @@ Figure plot
 
 '''
 
+size = 15
+rc('xtick', labelsize=size)
+rc('ytick', labelsize=size)
 def plotFigure(x, y, title=None, form='line', ticks=None, labels=None, params=None, show=False):
     if title:
-        plt.figure(title)
-        plt.title(title)
+        plt.figure(title, figsize=(9, 7))
+        plt.title(title, fontsize=size)
     else:
-        plt.figure()
+        plt.figure(figsize=(9, 6.5))
         
     plot = _getPlot(form)
     x_type = type(x[0]) if isinstance(x, list) else type(x)
@@ -95,9 +99,9 @@ def plotFigure(x, y, title=None, form='line', ticks=None, labels=None, params=No
 
     if labels:
         if 'x' in labels:
-            plt.xlabel(labels['x'])
+            plt.xlabel(labels['x'], fontsize=size)
         if 'y' in labels:
-            plt.ylabel(labels['y'])
+            plt.ylabel(labels['y'], fontsize=size)
             
     if show:
         plt.show()
